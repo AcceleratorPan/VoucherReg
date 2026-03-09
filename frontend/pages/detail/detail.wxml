@@ -1,0 +1,89 @@
+<view class="container">
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+
+  <view class="content" wx:if="{{!loading && task}}">
+    <view class="header">
+      <view class="status-badge" style="background-color: {{getStatusColor(task.status)}}20; color: {{getStatusColor(task.status)}}">
+        {{getStatusText(task.status)}}
+      </view>
+      <text class="task-id">ID: {{task.taskId}}</text>
+    </view>
+
+    <view class="info-section">
+      <view class="info-item">
+        <text class="label">科目名称</text>
+        <text class="value">{{task.subject || "未设置"}}</text>
+      </view>
+      <view class="info-item">
+        <text class="label">月份</text>
+        <text class="value">{{task.month || "未设置"}}</text>
+      </view>
+      <view class="info-item">
+        <text class="label">凭证号</text>
+        <text class="value">{{task.voucherNo || "未设置"}}</text>
+      </view>
+    </view>
+
+    <view class="info-section" wx:if="{{task.fileName}}">
+      <view class="info-item">
+        <text class="label">文件名</text>
+        <text class="value file-name">{{task.fileName}}</text>
+      </view>
+    </view>
+
+    <view class="info-section" wx:if="{{task.pageCount}}">
+      <view class="info-item">
+        <text class="label">页数</text>
+        <text class="value">{{task.pageCount}} 页</text>
+      </view>
+    </view>
+
+    <view class="info-section" wx:if="{{task.confidence}}">
+      <view class="info-item">
+        <text class="label">识别置信度</text>
+        <text class="value">{{confidencePercent}}%</text>
+      </view>
+    </view>
+
+    <view class="info-section">
+      <view class="info-item">
+        <text class="label">创建时间</text>
+        <text class="value">{{formatDate(task.createdAt)}}</text>
+      </view>
+      <view class="info-item" wx:if="{{task.updatedAt}}">
+        <text class="label">更新时间</text>
+        <text class="value">{{formatDate(task.updatedAt)}}</text>
+      </view>
+    </view>
+
+    <view class="action-section">
+      <button 
+        class="button primary-button" 
+        bindtap="onViewPDF"
+        wx:if="{{task.status === 'pdf_generated'}}"
+      >
+        查看PDF
+      </button>
+      <button 
+        class="button secondary-button" 
+        bindtap="onRetry"
+        wx:if="{{task.status === 'failed'}}"
+      >
+        重试任务
+      </button>
+    </view>
+  </view>
+
+  <view class="empty-state" wx:if="{{!loading && !task}}">
+    <text class="empty-text">任务不存在或已删除</text>
+  </view>
+
+  <!-- 返回首页 - 固定在底部 -->
+  <view class="back-home">
+    <button class="button back-home-button" bindtap="goHome">
+      返回首页
+    </button>
+  </view>
+</view>

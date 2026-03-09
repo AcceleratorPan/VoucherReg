@@ -1,0 +1,254 @@
+.container {
+  padding: 20rpx;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.header {
+  margin-bottom: 30rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20rpx;
+}
+
+.title {
+  display: block;
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.batch-btn {
+  padding: 10rpx 24rpx;
+  font-size: 26rpx;
+  color: #07c160;
+  border: 1rpx solid #07c160;
+  border-radius: 8rpx;
+}
+
+.clear-button {
+  font-size: 26rpx;
+  color: #f5222d;
+  background-color: #fff;
+  border: 1rpx solid #f5222d;
+  padding: 10rpx 24rpx;
+  border-radius: 8rpx;
+  line-height: 1.5;
+}
+
+.select-hint {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.select-all {
+  font-size: 24rpx;
+  color: #07c160;
+  padding: 10rpx 20rpx;
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  flex: 1;
+  padding-bottom: 20rpx;
+}
+
+.task-item {
+  background-color: #fff;
+  border-radius: 12rpx;
+  padding: 30rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.task-item.selectable {
+  display: flex;
+  align-items: flex-start;
+}
+
+/* 复选框 */
+.task-checkbox {
+  display: flex;
+  align-items: flex-start;
+  margin-right: 20rpx;
+  padding-top: 10rpx;
+}
+
+.checkbox {
+  width: 40rpx;
+  height: 40rpx;
+  border: 2rpx solid #e0e0e0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  color: #fff;
+}
+
+.checkbox.checked {
+  background-color: #07c160;
+  border-color: #07c160;
+}
+
+.task-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.task-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.task-subject {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.task-time {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.task-status {
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  white-space: nowrap;
+}
+
+.task-details {
+  display: flex;
+  gap: 20rpx;
+  margin-bottom: 15rpx;
+}
+
+.detail-item {
+  padding: 6rpx 16rpx;
+  background-color: #f0f0f0;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.task-file {
+  margin-top: 15rpx;
+  padding-top: 15rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.file-name {
+  display: block;
+  font-size: 26rpx;
+  color: #666;
+  word-break: break-all;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 200rpx 0;
+  flex: 1;
+}
+
+.empty-text {
+  font-size: 32rpx;
+  color: #999;
+  margin-bottom: 20rpx;
+}
+
+.empty-hint {
+  font-size: 28rpx;
+  color: #ccc;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 40rpx 0;
+}
+
+.loading text {
+  color: #999;
+  font-size: 28rpx;
+}
+
+/* 返回首页 - 固定在底部 */
+.back-home {
+  margin-top: auto;
+  padding-top: 30rpx;
+  border-top: 1rpx solid #e0e0e0;
+  width: 100%;
+}
+
+.back-home-button {
+  background-color: #fff;
+  color: #666;
+  border: 1rpx solid #e0e0e0;
+  font-size: 28rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  width: 100%;
+  border-radius: 12rpx;
+}
+
+/* 固定底部按钮 */
+.fixed-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 20rpx;
+  padding: 30rpx;
+  background-color: #fff;
+  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.fixed-bottom .button {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: 12rpx;
+  font-size: 32rpx;
+  border: none;
+}
+
+.fixed-bottom .primary-button {
+  background-color: #07c160;
+  color: #fff;
+}
+
+.fixed-bottom .cancel-btn {
+  background-color: #fff;
+  color: #666;
+  border: 1rpx solid #e0e0e0;
+}
+
+.fixed-bottom .back-home-button {
+  background-color: #fff;
+  color: #666;
+  border: 1rpx solid #e0e0e0;
+}

@@ -1,0 +1,86 @@
+/* app.wxss */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx;
+}
+
+.button {
+  width: 80%;
+  height: 80rpx;
+  margin: 20rpx 0;
+  border-radius: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.primary-button {
+  background-color: #1AAD19;
+  color: white;
+}
+
+.secondary-button {
+  background-color: #F7F7F7;
+  color: #333;
+  border: 1rpx solid #DDD;
+}
+
+.image-list {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 20rpx 0;
+  width: 100%;
+}
+
+.image-item {
+  width: 160rpx;
+  height: 160rpx;
+  margin: 10rpx;
+  position: relative;
+}
+
+.image-item image {
+  width: 100%;
+  height: 100%;
+  border-radius: 10rpx;
+}
+
+.image-index {
+  position: absolute;
+  top: 5rpx;
+  left: 5rpx;
+  width: 40rpx;
+  height: 40rpx;
+  background-color: rgba(26, 173, 25, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 20rpx;
+  font-weight: bold;
+}
+
+.delete-icon {
+  position: absolute;
+  top: -10rpx;
+  right: -10rpx;
+  width: 40rpx;
+  height: 40rpx;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24rpx;
+}
+
+.loading {
+  margin: 20rpx 0;
+}

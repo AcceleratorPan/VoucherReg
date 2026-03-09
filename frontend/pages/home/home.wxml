@@ -1,0 +1,16 @@
+<view class="container">
+  <view class="logo-section">
+    <view class="app-icon">📄</view>
+    <text class="app-name">会计凭证处理</text>
+    <text class="app-desc">智能识别凭证信息，一键生成PDF</text>
+  </view>
+  
+  <view class="button-group">
+    <button class="button primary-button" bindtap="goToProcess">
+      开始处理
+    </button>
+    <button class="button secondary-button" bindtap="goToHistory">
+      查看历史
+    </button>
+  </view>
+</view>

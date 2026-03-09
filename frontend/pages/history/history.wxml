@@ -1,0 +1,81 @@
+<view class="container">
+  <view class="header">
+    <text class="title">凭证历史</text>
+    <view class="header-actions" wx:if="{{tasks.length > 0 && !selectionMode}}">
+      <view class="batch-btn" bindtap="enterSelectionMode">
+        批量下载
+      </view>
+      <button class="clear-button" bindtap="onClearHistory">
+        清除历史
+      </button>
+    </view>
+    <view class="header-actions" wx:if="{{selectionMode}}">
+      <text class="select-hint">已选择 {{selectedCount}} 个</text>
+      <text class="select-all" bindtap="selectAll">全选</text>
+    </view>
+  </view>
+
+  <view class="task-list" wx:if="{{tasks.length > 0}}">
+    <view
+      class="task-item {{selectionMode ? 'selectable' : ''}}"
+      wx:for="{{tasks}}"
+      wx:key="taskId"
+      bindtap="{{selectionMode ? 'toggleSelection' : 'onTaskTap'}}"
+      data-index="{{index}}"
+      data-task="{{item}}"
+    >
+      <!-- 选择模式下的复选框 -->
+      <view class="task-checkbox" wx:if="{{selectionMode}}">
+        <view class="checkbox {{selectedTasks[index] ? 'checked' : ''}}">
+          <text wx:if="{{selectedTasks[index]}}">✓</text>
+        </view>
+      </view>
+
+      <!-- 任务内容 -->
+      <view class="task-main">
+        <view class="task-info">
+          <text class="task-subject">{{item.subject || "未命名"}}</text>
+          <text class="task-time">{{item.createdAt || ""}}</text>
+        </view>
+        <view class="task-status" style="background-color: {{getStatusColor(item.status)}}20; color: {{getStatusColor(item.status)}}">
+          {{getStatusText(item.status)}}
+        </view>
+      </view>
+
+      <view class="task-details" wx:if="{{item.month || item.voucherNo}}">
+        <text class="detail-item" wx:if="{{item.month}}">{{item.month}}</text>
+        <text class="detail-item" wx:if="{{item.voucherNo}}">{{item.voucherNo}}</text>
+      </view>
+
+      <view class="task-file" wx:if="{{item.fileName}}">
+        <text class="file-name">{{item.fileName}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty-state" wx:else>
+    <text class="empty-text">暂无凭证记录</text>
+    <text class="empty-hint">开始创建您的第一个凭证吧</text>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 固定底部按钮（选择模式下） -->
+  <view class="fixed-bottom" wx:if="{{selectionMode}}">
+    <button class="button cancel-btn" bindtap="cancelSelectionMode">
+      取消
+    </button>
+    <button class="button primary-button" bindtap="onBatchDownload">
+      下载选中
+    </button>
+  </view>
+
+  <!-- 固定底部按钮（非选择模式） -->
+  <view class="fixed-bottom" wx:if="{{!selectionMode}}">
+    <button class="button back-home-button" bindtap="goHome">
+      返回首页
+    </button>
+  </view>
+</view>

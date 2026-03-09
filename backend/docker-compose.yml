@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: sqlite:///./data/app.db
+      STORAGE_PROVIDER: local
+      LOCAL_STORAGE_ROOT: ./data/storage
+      OCR_PROVIDER: mock
+    volumes:
+      - ./:/app

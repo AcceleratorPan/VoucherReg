@@ -1,0 +1,43 @@
+## macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+._*
+
+## Python caches and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyre/
+.hypothesis/
+.tox/
+.nox/
+.coverage
+.coverage.*
+htmlcov/
+
+## Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+## Backend local environment and runtime data
+backend/.env
+backend/.env.*
+!backend/.env.example
+backend/data/
+backend/*.db
+backend/*.sqlite3
+backend/build/
+backend/dist/
+backend/.eggs/
+backend/*.egg-info/
+backend/pip-wheel-metadata/
+
+## Frontend local-only WeChat config
+frontend/project.private.config.json

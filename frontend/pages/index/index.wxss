@@ -1,0 +1,279 @@
+.container {
+  padding: 30rpx;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 任务计数 */
+.task-count {
+  width: 100%;
+  text-align: center;
+  font-size: 24rpx;
+  color: #999;
+  margin-bottom: 20rpx;
+}
+
+/* 继续处理提示 */
+/* 待处理任务提示 */
+.normal-tip {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 30rpx;
+  background-color: #f6ffed;
+  border: 1rpx solid #b7eb8f;
+  border-radius: 8rpx;
+  margin-bottom: 20rpx;
+  box-sizing: border-box;
+}
+
+.normal-tip text {
+  font-size: 26rpx;
+  color: #52c41a;
+}
+
+.confirm-btn {
+  color: #07c160 !important;
+  font-weight: bold;
+}
+
+/* 步骤指示器 */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  margin-bottom: 40rpx;
+  width: 100%;
+  justify-content: center;
+}
+
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.step-number {
+  width: 50rpx;
+  height: 50rpx;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+
+.step-text {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.step-line {
+  width: 100rpx;
+  height: 2rpx;
+  background-color: #e0e0e0;
+  margin: 0 20rpx;
+}
+
+.step-item.active .step-number {
+  background-color: #07c160;
+  color: #fff;
+}
+
+.step-item.active .step-text {
+  color: #07c160;
+  font-weight: bold;
+}
+
+.step-item.completed .step-number {
+  background-color: #07c160;
+  color: #fff;
+}
+
+.step-item.completed .step-text {
+  color: #07c160;
+}
+
+.step-line.active {
+  background-color: #07c160;
+}
+
+/* 步骤描述 */
+.step-desc {
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 30rpx;
+  text-align: center;
+}
+
+/* 按钮 */
+.button {
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: 12rpx;
+  font-size: 32rpx;
+  margin-bottom: 20rpx;
+  border: none;
+}
+
+.primary-button {
+  background-color: #07c160;
+  color: #fff;
+}
+
+.secondary-button {
+  background-color: #fff;
+  color: #333;
+  border: 1rpx solid #e0e0e0;
+}
+
+/* 按钮组 */
+.button-group {
+  display: flex;
+  gap: 20rpx;
+  width: 100%;
+  margin-top: 30rpx;
+}
+
+.button-group .button {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+/* 第一张图片容器 */
+.first-image-container {
+  width: 100%;
+  margin: 30rpx 0;
+}
+
+.first-image {
+  position: relative;
+  width: calc(33.33% - 14rpx);
+  aspect-ratio: 1;
+  border-radius: 8rpx;
+  overflow: hidden;
+  background-color: #f0f0f0;
+}
+
+/* 分割线 */
+.divider {
+  width: 100%;
+  height: 2rpx;
+  background-color: #e0e0e0;
+  margin: 20rpx 0;
+  background-image: repeating-linear-gradient(
+    to right,
+    #e0e0e0,
+    #e0e0e0 10rpx,
+    transparent 10rpx,
+    transparent 20rpx
+  );
+}
+
+/* 后续图片列表 */
+.image-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+  margin: 30rpx 0;
+  width: 100%;
+}
+
+.image-item {
+  position: relative;
+  width: calc(33.33% - 14rpx);
+  aspect-ratio: 1;
+  border-radius: 8rpx;
+  overflow: hidden;
+  background-color: #f0f0f0;
+}
+
+.image-item image {
+  width: 100%;
+  height: 100%;
+}
+
+.image-index {
+  position: absolute;
+  top: 10rpx;
+  left: 10rpx;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 20rpx;
+  padding: 4rpx 8rpx;
+  border-radius: 4rpx;
+}
+
+.image-label {
+  position: absolute;
+  top: 10rpx;
+  right: 10rpx;
+  background-color: #07c160;
+  color: #fff;
+  font-size: 16rpx;
+  padding: 4rpx 8rpx;
+  border-radius: 4rpx;
+}
+
+.delete-icon {
+  position: absolute;
+  top: 10rpx;
+  right: 10rpx;
+  background-color: rgba(255, 0, 0, 0.8);
+  color: #fff;
+  font-size: 24rpx;
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+/* 加载状态 */
+.loading {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 30rpx 40rpx;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  z-index: 9999;
+}
+
+/* 固定底部按钮 */
+.fixed-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 30rpx;
+  background-color: #fff;
+  box-shadow: 0 -2rpx 10rpx rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.back-home-button {
+  background-color: #fff;
+  color: #666;
+  border: 1rpx solid #e0e0e0;
+  font-size: 28rpx;
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  border-radius: 12rpx;
+}

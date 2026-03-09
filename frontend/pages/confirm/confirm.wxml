@@ -1,0 +1,103 @@
+<view class="container">
+  <!-- 顶部操作栏 -->
+  <view class="header">
+    <text class="title">确认凭证信息</text>
+    <view class="header-right" wx:if="{{!selectionMode}}">
+      <text class="task-count">共 {{taskList.length}} 个任务</text>
+      <view class="batch-btn" bindtap="enterSelectionMode">
+        批量下载
+      </view>
+    </view>
+    <view class="selection-header" wx:if="{{selectionMode}}">
+      <text class="select-hint">已选择 {{selectedCount}} 个</text>
+      <text class="select-all" bindtap="selectAll">全选</text>
+    </view>
+  </view>
+
+  <!-- 任务列表 -->
+  <scroll-view class="task-list {{selectionMode ? 'selection-mode' : ''}}" scroll-y>
+    <view class="task-item" wx:for="{{taskList}}" wx:key="taskId">
+      <!-- 选择模式下的复选框 -->
+      <view class="task-checkbox" wx:if="{{selectionMode}}" bindtap="toggleSelection" data-index="{{index}}">
+        <view class="checkbox {{selectedTasks[index] ? 'checked' : ''}}">
+          <text wx:if="{{selectedTasks[index]}}">✓</text>
+        </view>
+      </view>
+
+      <!-- 任务内容 -->
+      <view class="task-content">
+        <view class="task-header">
+          <text class="task-number">任务 {{index + 1}}</text>
+          <text class="confidence" wx:if="{{item.confidence > 0}}">置信度: {{item.confidencePercent}}%</text>
+        </view>
+
+        <!-- 表单项 -->
+        <view class="form-section">
+          <view class="form-item">
+            <text class="label">科目名称</text>
+            <input
+              class="input"
+              value="{{item.subject}}"
+              placeholder="请输入科目名称"
+              bindinput="onSubjectInput"
+              data-index="{{index}}"
+            />
+          </view>
+
+          <view class="form-item">
+            <text class="label">月份</text>
+            <input
+              class="input"
+              value="{{item.month}}"
+              placeholder="例如: 2022-07"
+              bindinput="onMonthInput"
+              data-index="{{index}}"
+            />
+          </view>
+
+          <view class="form-item">
+            <text class="label">凭证号</text>
+            <input
+              class="input"
+              value="{{item.voucherNo}}"
+              placeholder="例如: 记470"
+              bindinput="onVoucherNoInput"
+              data-index="{{index}}"
+            />
+          </view>
+        </view>
+
+        <!-- 文件名预览 -->
+        <view class="preview-section" wx:if="{{item.fileNamePreview}}">
+          <text class="preview-label">文件名预览:</text>
+          <text class="preview-text">{{item.fileNamePreview}}</text>
+        </view>
+
+        <!-- 回看按钮 -->
+        <view class="view-image-btn" bindtap="viewFirstImage" data-taskid="{{item.taskId}}">
+          回看首页
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 选择模式下的固定底部按钮 -->
+  <view class="fixed-bottom" wx:if="{{selectionMode}}">
+    <button class="button cancel-btn" bindtap="cancelSelectionMode" disabled="{{loading}}">
+      取消
+    </button>
+    <button class="button primary-button" bindtap="downloadSelected" loading="{{loading}}">
+      下载
+    </button>
+  </view>
+
+  <!-- 固定底部按钮（非选择模式） -->
+  <view class="fixed-bottom-buttons" wx:if="{{!selectionMode}}">
+    <button class="button secondary-button" bindtap="onCancel" disabled="{{loading}}">
+      返回继续处理
+    </button>
+    <button class="button back-home-button" bindtap="goHome">
+      返回首页
+    </button>
+  </view>
+</view>

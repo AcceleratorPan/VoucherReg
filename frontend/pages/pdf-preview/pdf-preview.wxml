@@ -1,0 +1,30 @@
+<view class="container">
+  <view class="content">
+    <view class="info-section">
+      <text class="info-text">PDF文件已生成</text>
+      <text class="file-name" wx:if="{{fileName}}">{{fileName}}</text>
+    </view>
+    
+    <view class="button-group">
+      <button class="button primary-button" bindtap="openPDF">
+        重新打开PDF
+      </button>
+      <button class="button secondary-button" open-type="share">
+        分享PDF
+      </button>
+    </view>
+
+    <view class="nav-group">
+      <button class="button primary-button" bindtap="nextProcess">
+        进行下一次操作
+      </button>
+    </view>
+  </view>
+
+  <!-- 返回首页 - 固定在底部 -->
+  <view class="back-home">
+    <button class="button back-home-button" bindtap="goHome">
+      返回首页
+    </button>
+  </view>
+</view>

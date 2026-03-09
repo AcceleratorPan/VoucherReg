@@ -6,7 +6,7 @@
     "pages/pdf-preview/pdf-preview",
     "pages/history/history",
     "pages/detail/detail",
-    "pages/download/download"
+    "pages/present/present"
   ],
   "window": {
     "backgroundTextStyle": "light",

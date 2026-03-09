@@ -1,8 +1,8 @@
 <view class="container">
   <!-- 待处理任务提示 -->
   <view class="normal-tip" wx:if="{{taskCount > 0}}">
-    <text>已有 {{taskCount}} 个任务待查看结果</text>
-    <text class="confirm-btn" bindtap="goToConfirm">查看结果</text>
+    <text>已经上传了 {{taskCount}} 个任务</text>
+    <text class="confirm-btn" bindtap="goToConfirm">去确认</text>
   </view>
 
   <!-- 步骤指示 -->
@@ -84,7 +84,7 @@
       上一步
     </view>
     <view class="button primary-button" bindtap="startProcess" wx:if="{{firstImage}}">
-      开始合成
+      上传任务
     </view>
   </view>
   

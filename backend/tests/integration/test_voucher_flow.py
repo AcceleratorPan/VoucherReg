@@ -4,6 +4,8 @@ from io import BytesIO
 from urllib.parse import urlparse
 from zipfile import ZipFile
 
+from PIL import Image
+
 
 def _user_params(user_id: str) -> dict[str, str]:
     return {"userId": user_id}
@@ -128,6 +130,34 @@ def test_first_image_endpoint_returns_accessible_image_url(client, sample_image_
     public_image_resp = client.get(image_path)
     assert public_image_resp.status_code == 200
     assert public_image_resp.headers["content-type"] == "image/png"
+
+
+def test_uploaded_page_is_persisted_as_scanned_png(client) -> None:
+    user_id = "scanner_user"
+    create_resp = client.post("/voucher-tasks", json={"userId": user_id})
+    assert create_resp.status_code == 201
+    task_id = create_resp.json()["taskId"]
+
+    image = Image.new("RGB", (640, 960), color=(40, 120, 220))
+    upload_buffer = BytesIO()
+    image.save(upload_buffer, format="JPEG")
+    original_bytes = upload_buffer.getvalue()
+
+    upload_resp = client.post(
+        f"/voucher-tasks/{task_id}/pages",
+        params=_user_params(user_id),
+        files={"file": ("page0.jpg", original_bytes, "image/jpeg")},
+        data={"pageIndex": "0"},
+    )
+    assert upload_resp.status_code == 200
+    page = upload_resp.json()
+    assert page["imageUrl"].endswith("/pages/0.png")
+
+    scanned_path = urlparse(page["imageUrl"]).path
+    scanned_resp = client.get(scanned_path)
+    assert scanned_resp.status_code == 200
+    assert scanned_resp.headers["content-type"] == "image/png"
+    assert scanned_resp.content != original_bytes
 
 
 def test_batch_download_link_returns_zip_attachment(client, sample_image_bytes: bytes) -> None:

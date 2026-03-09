@@ -10,6 +10,7 @@ Backend service for accounting voucher capture workflows used by a WeChat Mini P
 - Generate final multi-page PDF in upload order.
 - Persist and return final PDF URL.
 - List task history and task detail.
+- Scan every uploaded image through an OpenCV document-enhancement pipeline before OCR/PDF.
 
 ## Tech Stack
 - Python 3.11+
@@ -17,6 +18,7 @@ Backend service for accounting voucher capture workflows used by a WeChat Mini P
 - Pydantic v2
 - SQLAlchemy 2.x
 - Alembic
+- OpenCV
 - Pillow
 - ReportLab
 - pytest
@@ -127,4 +129,5 @@ RAPIDOCR_TEXT_SCORE=0.5
 RAPIDOCR_USE_DET=true
 RAPIDOCR_USE_CLS=true
 RAPIDOCR_USE_REC=true
+DOCUMENT_SCAN_MAX_EDGE=1600
 ```

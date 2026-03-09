@@ -63,6 +63,14 @@ function confirmGenerate(taskId, { subject, month, voucherNo }, userId) {
   });
 }
 
+function manualGenerate(taskId, { subject, month, voucherNo }, userId) {
+  return request({
+    url: `/voucher-tasks/${taskId}/manual-generate?userId=${userId}`,
+    method: "POST",
+    data: { subject, month, voucherNo },
+  });
+}
+
 function getTask(taskId, userId) {
   return request({
     url: `/voucher-tasks/${taskId}?userId=${userId}`,
@@ -81,14 +89,6 @@ function clearAllTasks(userId) {
   return request({
     url: `/voucher-tasks?userId=${userId}`,
     method: "DELETE",
-  });
-}
-
-function batchDownload(taskIds, userId) {
-  return request({
-    url: `/voucher-tasks/batch-download?userId=${userId}`,
-    method: "POST",
-    data: { taskIds },
   });
 }
 
@@ -114,10 +114,10 @@ module.exports = {
   finishUpload,
   recognize,
   confirmGenerate,
+  manualGenerate,
   getTask,
   getTasks,
   clearAllTasks,
-  batchDownload,
   batchDownloadLink,
   getFirstImage
 };

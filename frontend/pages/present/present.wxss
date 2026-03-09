@@ -29,6 +29,25 @@
   padding: 30rpx;
 }
 
+.file-list-section {
+  margin-bottom: 30rpx;
+}
+
+.file-list-box {
+  background-color: #f8f8f8;
+  border-radius: 8rpx;
+  padding: 20rpx;
+  max-height: 200rpx;
+  overflow-y: auto;
+}
+
+.file-name {
+  display: block;
+  font-size: 24rpx;
+  color: #999;
+  line-height: 1.8;
+}
+
 .url-section {
   margin-bottom: 30rpx;
 }
@@ -46,6 +65,8 @@
   border-radius: 8rpx;
   padding: 20rpx;
   word-break: break-all;
+  max-height: 120rpx;
+  overflow-y: auto;
 }
 
 .url-text {

@@ -9,91 +9,92 @@
   <view class="step-indicator">
     <view class="step-item {{step === 1 ? 'active' : (firstImage ? 'completed' : '')}}">
       <view class="step-number">{{firstImage ? '✓' : '1'}}</view>
-      <text class="step-text">上传附件页</text>
+      <text class="step-text">上传凭证页</text>
     </view>
     <view class="step-line {{firstImage ? 'active' : ''}}"></view>
     <view class="step-item {{step === 2 ? 'active' : ''}}">
       <view class="step-number">2</view>
-      <text class="step-text">上传附加页</text>
+      <text class="step-text">上传附件页</text>
     </view>
   </view>
-  
-  <!-- 第一步：上传凭证页（只能选择1张） -->
-  <view wx:if="{{step === 1 && !firstImage}}">
-    <text class="step-desc">请拍摄或选择凭证的凭证页</text>
-    <view class="button primary-button" bindtap="takeFirstPhoto">
-      拍照
+
+  <!-- 可滚动内容区域 -->
+  <scroll-view scroll-y class="content-scroll">
+    <!-- 第一步：上传凭证页（只能选择1张） -->
+    <view wx:if="{{step === 1 && !firstImage}}">
+      <text class="step-desc">请拍摄或选择凭证的凭证页</text>
+      <view class="button primary-button" bindtap="takeFirstPhoto">
+        拍照
+      </view>
+      <view class="button secondary-button" bindtap="chooseFirstImage">
+        选择本地图片
+      </view>
     </view>
-    <view class="button secondary-button" bindtap="chooseFirstImage">
-      选择本地图片
+
+    <!-- 第二步：上传附件页（可选择多张） -->
+    <view wx:elif="{{step === 2}}">
+      <text class="step-desc">
+        已上传凭证页，可以继续添加附件页面
+      </text>
+      <view class="button primary-button" bindtap="takePhoto">
+        拍照
+      </view>
+      <view class="button secondary-button" bindtap="chooseImages">
+        选择本地图片
+      </view>
     </view>
-  </view>
-  
-  <!-- 第二步：上传附件页（可选择多张） -->
-  <view wx:elif="{{step === 2}}">
-    <text class="step-desc">
-      已上传凭证页，可以继续添加附件页面
-    </text>
-    <view class="button primary-button" bindtap="takePhoto">
-      拍照
+
+    <!-- 已上传凭证页但未进入第二步时，提示用户点击下一步 -->
+    <view wx:elif="{{firstImage && step === 1}}">
+      <text class="step-desc">已上传凭证页，请点击"下一步"继续添加附件页</text>
     </view>
-    <view class="button secondary-button" bindtap="chooseImages">
-      选择本地图片
+
+    <!-- 已选择的凭证页图片 -->
+    <view wx:if="{{firstImage}}">
+      <view class="first-image-container">
+        <view class="image-item first-image">
+          <image src="{{firstImage}}" mode="aspectFill"></image>
+          <view class="image-index">1</view>
+          <view class="image-label">凭证页</view>
+          <view class="delete-icon" bindtap="deleteImage" data-type="first">
+            ×
+          </view>
+        </view>
+      </view>
     </view>
-  </view>
-  
-  <!-- 已上传凭证页但未进入第二步时，提示用户点击下一步 -->
-  <view wx:elif="{{firstImage && step === 1}}">
-    <text class="step-desc">已上传凭证页，请点击"下一步"继续添加附件页</text>
-  </view>
-  
-  <!-- 已选择的凭证页图片 -->
-  <view wx:if="{{firstImage}}">
-    <view class="first-image-container">
-      <view class="image-item first-image">
-        <image src="{{firstImage}}" mode="aspectFill"></image>
-        <view class="image-index">1</view>
-        <view class="image-label">凭证页</view>
-        <view class="delete-icon" bindtap="deleteImage" data-type="first">
+
+    <!-- 分割线 -->
+    <view class="divider" wx:if="{{firstImage && images.length > 0}}"></view>
+
+    <!-- 已选择的其他图片 -->
+    <view class="image-list" wx:if="{{images.length > 0}}">
+      <view class="image-item" wx:for="{{images}}" wx:key="{{index}}">
+        <image src="{{item}}" mode="aspectFill"></image>
+        <view class="image-index">{{index + 2}}</view>
+        <view class="delete-icon" bindtap="deleteImage" data-type="other" data-index="{{index}}">
           ×
         </view>
       </view>
     </view>
-  </view>
-  
-  <!-- 分割线 -->
-  <view class="divider" wx:if="{{firstImage && images.length > 0}}"></view>
-  
-  <!-- 已选择的其他图片 -->
-  <view class="image-list" wx:if="{{images.length > 0}}">
-    <view class="image-item" wx:for="{{images}}" wx:key="{{index}}">
-      <image src="{{item}}" mode="aspectFill"></image>
-      <view class="image-index">{{index + 2}}</view>
-      <view class="delete-icon" bindtap="deleteImage" data-type="other" data-index="{{index}}">
-        ×
-      </view>
-    </view>
-  </view>
-  
-  <!-- 操作按钮 -->
-  <view class="button-group">
-    <view wx:if="{{firstImage && step === 1}}" class="button secondary-button" bindtap="nextStep">
-      下一步
-    </view>
-    <view wx:if="{{step === 2}}" class="button secondary-button" bindtap="prevStep">
-      上一步
-    </view>
-    <view class="button primary-button" bindtap="startProcess" wx:if="{{firstImage}}">
-      上传任务
-    </view>
-  </view>
-  
+  </scroll-view>
+
   <view class="loading" wx:if="{{loading}}">
     <text>{{loadingText}}</text>
   </view>
 
-  <!-- 固定底部按钮 -->
-  <view class="fixed-bottom">
+  <!-- 固定底部按钮区域 -->
+  <view class="fixed-bottom-buttons">
+    <view class="button-group">
+      <view wx:if="{{firstImage && step === 1}}" class="button secondary-button" bindtap="nextStep">
+        下一步
+      </view>
+      <view wx:if="{{step === 2}}" class="button secondary-button" bindtap="prevStep">
+        上一步
+      </view>
+      <view class="button primary-button" bindtap="startProcess" wx:if="{{firstImage}}">
+        上传任务
+      </view>
+    </view>
     <button class="button back-home-button" bindtap="goHome">
       返回首页
     </button>

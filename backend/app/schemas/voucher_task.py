@@ -117,3 +117,16 @@ class DeleteTaskResponse(APIModel):
 class ClearHistoryResponse(APIModel):
     user_id: str
     deleted_count: int
+
+
+class ManualGenerateRequest(APIModel):
+    subject: str
+    month: str
+    voucher_no: str
+
+
+class ManualGenerateResponse(APIModel):
+    task_id: str
+    status: str
+    file_name: str
+    pdf_url: str

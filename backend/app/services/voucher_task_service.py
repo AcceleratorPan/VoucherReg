@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import AppException, ConflictException, NotFoundException, ValidationException
 from app.models import VoucherPage, VoucherTask, VoucherTaskStatus
-from app.schemas.voucher_task import ConfirmGenerateRequest
+from app.schemas.voucher_task import ConfirmGenerateRequest, ManualGenerateRequest
 from app.services.auth.token import TokenService
 from app.services.ocr.base import OCRService
 from app.services.parsing.parser import ParsedVoucherResult, ParsingService
@@ -186,6 +186,58 @@ class VoucherTaskService:
         ).all()
         if not pages:
             raise ValidationException(message="No pages found for PDF generation")
+
+        task.subject = subject
+        task.voucher_month = month
+        task.voucher_no = voucher_no
+        task.status = VoucherTaskStatus.CONFIRMED.value
+        self.db.commit()
+        self.db.refresh(task)
+
+        try:
+            ordered_images = [await self.storage_service.read_bytes(page.image_path) for page in pages]
+            pdf_bytes = await self.pdf_service.generate_pdf(ordered_images)
+
+            final_file_name = build_voucher_filename(subject, month, voucher_no)
+            safe_user_id = self._safe_user_id(normalized_user_id)
+            pdf_relative_path = f"{safe_user_id}/tasks/{task_id}/result/{final_file_name}"
+            await self.storage_service.save_bytes(pdf_relative_path, pdf_bytes, content_type="application/pdf")
+
+            task.file_name = final_file_name
+            task.pdf_url = pdf_relative_path
+            task.status = VoucherTaskStatus.PDF_GENERATED.value
+        except Exception:
+            task.status = VoucherTaskStatus.FAILED.value
+            self.db.commit()
+            raise
+
+        self.db.commit()
+        self.db.refresh(task)
+
+        return {
+            "task_id": task.id,
+            "status": task.status,
+            "file_name": task.file_name,
+            "pdf_url": task.pdf_url,
+        }
+
+    async def manual_generate(self, user_id: str, task_id: str, payload: ManualGenerateRequest) -> dict:
+        normalized_user_id = self._require_user_id(user_id)
+        task = self._get_task(task_id, normalized_user_id)
+
+        # Check that task has pages
+        pages = self.db.scalars(
+            select(VoucherPage).where(VoucherPage.task_id == task_id).order_by(VoucherPage.page_index.asc())
+        ).all()
+        if not pages:
+            raise ValidationException(message="No pages found for PDF generation")
+
+        subject = payload.subject
+        month = payload.month
+        voucher_no = payload.voucher_no
+
+        if not subject or not month or not voucher_no:
+            raise ValidationException(message="subject, month, and voucherNo are required to generate PDF")
 
         task.subject = subject
         task.voucher_month = month

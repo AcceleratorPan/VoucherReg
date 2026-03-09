@@ -8,6 +8,7 @@ from app.core.exceptions import ValidationException
 from app.db.session import get_db
 from app.services.auth import TokenService
 from app.services.image.scanner import OpenCVDocumentScanner
+from app.services.image.scan_preprocessor import HighResGrayscaleScanner
 from app.services.ocr.base import OCRService
 from app.services.ocr.mock import MockOCRService
 from app.services.ocr.rapidocr import RapidOCRService
@@ -25,7 +26,7 @@ def get_storage_service(settings: Settings = Depends(get_settings)) -> StorageSe
         return LocalStorageService(
             root=settings.local_storage_path,
             max_upload_mb=settings.max_upload_mb,
-            scanner=OpenCVDocumentScanner(max_edge=settings.document_scan_max_edge),
+            scanner=HighResGrayscaleScanner(target_long_edge=settings.document_scan_target_edge),
         )
     if provider == "cos":
         return COSStorageService()

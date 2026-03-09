@@ -1,11 +1,13 @@
 const { batchDownloadLink } = require("../../utils/http");
+const { goHomeWithConfirm } = require("../../utils/navigation");
 
 Page({
   data: {
     downloadUrl: "",
     taskCount: 0,
     userId: "",
-    copied: false
+    copied: false,
+    fileNames: []
   },
 
   onLoad() {
@@ -14,7 +16,11 @@ Page({
 
     // 获取选中的任务
     const selectedTasks = wx.getStorageSync("selectedTasksForDownload") || [];
-    this.setData({ taskCount: selectedTasks.length });
+    const fileNames = selectedTasks.map(t => t.pdfName).filter(Boolean);
+    this.setData({
+      taskCount: selectedTasks.length,
+      fileNames
+    });
 
     // 获取下载链接
     this.getDownloadLink(selectedTasks);
@@ -38,6 +44,13 @@ Page({
       wx.hideLoading();
 
       if (result.downloadUrl) {
+        // 获取成功，从 pendingTasks 中移除已选中的任务（标记为已完成）
+        const pendingTasks = wx.getStorageSync("pendingTasks") || [];
+        const selectedIds = new Set(selectedTasks.map(t => t.taskId));
+        const remainingTasks = pendingTasks.filter(t => !selectedIds.has(t.taskId));
+        wx.setStorageSync("pendingTasks", remainingTasks);
+
+        // 保留 selectedTasksForDownload 用于显示任务数量
         this.setData({ downloadUrl: result.downloadUrl });
       } else {
         wx.showToast({
@@ -86,10 +99,12 @@ Page({
 
   // 返回首页
   goHome() {
-    wx.removeStorageSync("pendingTasks");
-    wx.removeStorageSync("selectedTasksForDownload");
-    wx.reLaunch({
-      url: "/pages/home/home"
+    // 检查 pendingTasks 中已生成 PDF 但未下载的任务
+    const pendingTasks = wx.getStorageSync("pendingTasks") || [];
+    const pendingPDFCount = pendingTasks.filter(t => t.status === "pdf_generated").length;
+
+    goHomeWithConfirm({
+      getPendingCount: () => pendingPDFCount
     });
   },
 

@@ -14,6 +14,8 @@ from app.schemas.voucher_task import (
     DownloadLinkResponse,
     FinishUploadResponse,
     FirstVoucherImageResponse,
+    ManualGenerateRequest,
+    ManualGenerateResponse,
     RecognizeResponse,
     VoucherPageResponse,
     VoucherTaskDetailResponse,
@@ -89,6 +91,36 @@ async def confirm_generate(
     return ConfirmGenerateResponse.model_validate(result)
 
 
+@router.post("/{task_id}/manual-generate", response_model=ManualGenerateResponse)
+async def manual_generate(
+    task_id: str,
+    payload: ManualGenerateRequest,
+    request: Request,
+    user_id: str | None = Depends(get_request_user_id),
+    service: VoucherTaskService = Depends(get_voucher_task_service),
+) -> ManualGenerateResponse:
+    result = await service.manual_generate(user_id=user_id, task_id=task_id, payload=payload)
+    result = await _attach_download_url(
+        request=request,
+        service=service,
+        user_id=user_id,
+        task_data=result,
+    )
+    return ManualGenerateResponse.model_validate(result)
+
+
+@router.post("/batch-download-link", response_model=BatchDownloadLinkResponse)
+async def create_batch_download_link(
+    payload: BatchDownloadLinkRequest,
+    request: Request,
+    user_id: str | None = Depends(get_request_user_id),
+    service: VoucherTaskService = Depends(get_voucher_task_service),
+) -> BatchDownloadLinkResponse:
+    result = await service.create_batch_download_link(user_id=user_id, task_ids=payload.task_ids)
+    download_url = str(request.url_for("consume_download_link", download_token=result["download_token"]))
+    return BatchDownloadLinkResponse.model_validate({**result, "download_url": download_url})
+
+
 @router.post("/{task_id}/download-link", response_model=DownloadLinkResponse)
 async def create_download_link(
     task_id: str,
@@ -113,16 +145,21 @@ async def get_first_voucher_image(
     return FirstVoucherImageResponse.model_validate(result)
 
 
-@router.post("/batch-download-link", response_model=BatchDownloadLinkResponse)
-async def create_batch_download_link(
-    payload: BatchDownloadLinkRequest,
+@router.get("/{task_id}", response_model=VoucherTaskDetailResponse)
+async def get_voucher_task_detail(
+    task_id: str,
     request: Request,
     user_id: str | None = Depends(get_request_user_id),
     service: VoucherTaskService = Depends(get_voucher_task_service),
-) -> BatchDownloadLinkResponse:
-    result = await service.create_batch_download_link(user_id=user_id, task_ids=payload.task_ids)
-    download_url = str(request.url_for("consume_download_link", download_token=result["download_token"]))
-    return BatchDownloadLinkResponse.model_validate({**result, "download_url": download_url})
+) -> VoucherTaskDetailResponse:
+    result = await service.get_task_detail(user_id=user_id, task_id=task_id)
+    result = await _attach_download_url(
+        request=request,
+        service=service,
+        user_id=user_id,
+        task_data=result,
+    )
+    return VoucherTaskDetailResponse.model_validate(result)
 
 
 @router.get("", response_model=VoucherTaskListResponse)
@@ -144,23 +181,6 @@ async def list_voucher_tasks(
         for item in result["items"]
     ]
     return VoucherTaskListResponse.model_validate(result)
-
-
-@router.get("/{task_id}", response_model=VoucherTaskDetailResponse)
-async def get_voucher_task_detail(
-    task_id: str,
-    request: Request,
-    user_id: str | None = Depends(get_request_user_id),
-    service: VoucherTaskService = Depends(get_voucher_task_service),
-) -> VoucherTaskDetailResponse:
-    result = await service.get_task_detail(user_id=user_id, task_id=task_id)
-    result = await _attach_download_url(
-        request=request,
-        service=service,
-        user_id=user_id,
-        task_data=result,
-    )
-    return VoucherTaskDetailResponse.model_validate(result)
 
 
 @router.delete("/{task_id}", response_model=DeleteTaskResponse)

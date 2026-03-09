@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     storage_provider: str = "local"
     local_storage_root: str = "./data/storage"
     document_scan_max_edge: int = 1600
+    document_scan_target_edge: int = 2400  # 高清扫描目标边长
 
     ocr_provider: str = "rapidocr"
     rapidocr_text_score: float = 0.5

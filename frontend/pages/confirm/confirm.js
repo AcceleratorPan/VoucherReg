@@ -1,4 +1,5 @@
-const { confirmGenerate, batchDownloadLink, getFirstImage } = require("../../utils/http");
+const { confirmGenerate, manualGenerate, batchDownloadLink, getFirstImage } = require("../../utils/http");
+const { goHomeWithConfirm } = require("../../utils/navigation");
 
 Page({
   data: {
@@ -25,10 +26,11 @@ Page({
         confidencePercent: task.confidence ? (task.confidence * 100).toFixed(0) : 0
       }));
 
-      // 将 subject 是 "unknown" 的任务排在最前面
-      const unknownTasks = taskList.filter(t => t.subject === "unknown");
-      const otherTasks = taskList.filter(t => t.subject !== "unknown");
-      taskList = [...unknownTasks, ...otherTasks];
+      // 将信息不完整的任务（任意一项缺失）排在最前面
+      const isIncomplete = (task) => !task.subject || !task.month || !task.voucherNo;
+      const incompleteTasks = taskList.filter(t => isIncomplete(t));
+      const completeTasks = taskList.filter(t => !isIncomplete(t));
+      taskList = [...incompleteTasks, ...completeTasks];
 
       this.setData({ taskList });
 
@@ -76,9 +78,12 @@ Page({
         ...task,
         confidencePercent: task.confidence ? (task.confidence * 100).toFixed(0) : 0
       }));
-      const unknownTasks = newTaskList.filter(t => t.subject === "unknown");
-      const otherTasks = newTaskList.filter(t => t.subject !== "unknown");
-      newTaskList = [...unknownTasks, ...otherTasks];
+
+      // 将信息不完整的任务排在最前面
+      const isIncomplete = (task) => !task.subject || !task.month || !task.voucherNo;
+      const incompleteTasks = newTaskList.filter(t => isIncomplete(t));
+      const completeTasks = newTaskList.filter(t => !isIncomplete(t));
+      newTaskList = [...incompleteTasks, ...completeTasks];
 
       this.setData({ taskList: newTaskList });
 
@@ -103,6 +108,10 @@ Page({
     const value = e.detail.value;
     const taskList = this.data.taskList;
     taskList[index].subject = value;
+    // 如果已生成过PDF，用户修改信息后需要重新确认
+    if (taskList[index].status === "pdf_generated") {
+      taskList[index].status = taskList[index].originalStatus || "recognized";
+    }
     this.setData({ taskList });
   },
 
@@ -111,6 +120,10 @@ Page({
     const value = e.detail.value;
     const taskList = this.data.taskList;
     taskList[index].month = value;
+    // 如果已生成过PDF，用户修改信息后需要重新确认
+    if (taskList[index].status === "pdf_generated") {
+      taskList[index].status = taskList[index].originalStatus || "recognized";
+    }
     this.setData({ taskList });
   },
 
@@ -119,6 +132,10 @@ Page({
     const value = e.detail.value;
     const taskList = this.data.taskList;
     taskList[index].voucherNo = value;
+    // 如果已生成过PDF，用户修改信息后需要重新确认
+    if (taskList[index].status === "pdf_generated") {
+      taskList[index].status = taskList[index].originalStatus || "recognized";
+    }
     this.setData({ taskList });
   },
 
@@ -167,14 +184,15 @@ Page({
       return;
     }
 
-    // 更新状态为生成中
+    // 更新状态为生成中，保存原始状态用于失败恢复
     const newTaskList = [...taskList];
-    newTaskList[index] = { ...task, status: "confirmed" };
+    newTaskList[index] = { ...task, status: "confirmed", originalStatus: task.status };
     this.setData({ taskList: newTaskList });
 
     try {
+      // 始终使用 manualGenerate 接口
       await this.retryWithBackoff(
-        () => confirmGenerate(taskId, {
+        () => manualGenerate(taskId, {
           subject: task.subject,
           month: task.month,
           voucherNo: task.voucherNo
@@ -199,9 +217,10 @@ Page({
         icon: "success"
       });
     } catch (error) {
-      // 生成失败，恢复状态
+      // 生成失败，恢复到之前的状态
       const restoredTaskList = [...this.data.taskList];
-      restoredTaskList[index] = { ...restoredTaskList[index], status: "recognized" };
+      const originalStatus = task.originalStatus || task.status || "failed";
+      restoredTaskList[index] = { ...restoredTaskList[index], status: originalStatus };
       this.setData({ taskList: restoredTaskList });
 
       wx.showToast({
@@ -213,10 +232,14 @@ Page({
 
   // 进入选择模式
   enterSelectionMode() {
+    const { taskList } = this.data;
+    // 默认选中所有已生成 PDF 的任务
+    const selectedTasks = taskList.map(t => t.status === "pdf_generated");
+    const selectedCount = selectedTasks.filter(s => s).length;
     this.setData({
       selectionMode: true,
-      selectedTasks: new Array(this.data.taskList.length).fill(false),
-      selectedCount: 0
+      selectedTasks,
+      selectedCount
     });
   },
 
@@ -231,6 +254,17 @@ Page({
   // 切换选中状态
   toggleSelection(e) {
     const index = e.currentTarget.dataset.index;
+    const task = this.data.taskList[index];
+
+    // 不能选择没有生成 PDF 的 task
+    if (task.status !== "pdf_generated") {
+      wx.showToast({
+        title: "该任务未生成PDF",
+        icon: "none"
+      });
+      return;
+    }
+
     const selectedTasks = [...this.data.selectedTasks];
     selectedTasks[index] = !selectedTasks[index];
     const selectedCount = selectedTasks.filter(s => s).length;
@@ -239,8 +273,11 @@ Page({
 
   // 全选
   selectAll() {
-    const selectedTasks = new Array(this.data.taskList.length).fill(true);
-    this.setData({ selectedTasks, selectedCount: this.data.taskList.length });
+    // 只选择已生成 PDF 的任务
+    const { taskList } = this.data;
+    const selectedTasks = taskList.map(t => t.status === "pdf_generated");
+    const selectedCount = selectedTasks.filter(s => s).length;
+    this.setData({ selectedTasks, selectedCount });
   },
 
   // 批量确认并生成
@@ -383,11 +420,12 @@ Page({
   },
 
   goHome() {
-    // 清除所有待处理任务
-    wx.removeStorageSync("pendingTasks");
-    wx.removeStorageSync("selectedTasksForDownload");
-    wx.reLaunch({
-      url: "/pages/home/home"
+    const { taskList } = this.data;
+    // 统计已生成 PDF 但未下载的任务数量
+    const pendingCount = taskList.filter(t => t.status === "pdf_generated").length;
+
+    goHomeWithConfirm({
+      getPendingCount: () => pendingCount
     });
   }
 });

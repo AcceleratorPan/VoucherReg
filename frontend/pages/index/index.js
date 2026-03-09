@@ -290,23 +290,6 @@ Page({
     });
   },
 
-  // 等待所有后台识别完成
-  async waitForAllRecognitions() {
-    const activeTaskIds = this.data.activeTaskIds;
-    if (activeTaskIds.length === 0) {
-      return;
-    }
-
-    wx.showLoading({ title: "等待识别完成..." });
-
-    // 等待直到所有识别完成
-    while (this.data.activeTaskIds.length > 0) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-
-    wx.hideLoading();
-  },
-
   async goToConfirm() {
     // 等待所有后台识别完成
     if (this.data.activeTaskIds.length > 0) {

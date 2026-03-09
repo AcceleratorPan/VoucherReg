@@ -15,8 +15,8 @@
   <scroll-view class="task-list {{selectionMode ? 'selection-mode' : ''}}" scroll-y>
     <view class="task-item" wx:for="{{taskList}}" wx:key="taskId">
       <!-- 选择模式下的复选框 -->
-      <view class="task-checkbox" wx:if="{{selectionMode}}" bindtap="toggleSelection" data-index="{{index}}">
-        <view class="checkbox {{selectedTasks[index] ? 'checked' : ''}}">
+      <view class="task-checkbox {{item.status !== 'pdf_generated' ? 'disabled' : ''}}" wx:if="{{selectionMode}}" bindtap="toggleSelection" data-index="{{index}}">
+        <view class="checkbox {{selectedTasks[index] ? 'checked' : ''}} {{item.status !== 'pdf_generated' ? 'checkbox-disabled' : ''}}">
           <text wx:if="{{selectedTasks[index]}}">✓</text>
         </view>
       </view>
@@ -24,7 +24,7 @@
       <!-- 任务内容 -->
       <view class="task-content">
         <view class="task-header">
-          <text class="task-number">任务 {{index + 1}}</text>
+          <text class="task-number {{item.status !== 'pdf_generated' ? 'incomplete' : ''}}">任务 {{index + 1}}</text>
           <text class="confidence" wx:if="{{item.confidence > 0}}">置信度: {{item.confidencePercent}}%</text>
         </view>
 
@@ -77,9 +77,10 @@
 
         <!-- 确认按钮 -->
         <view class="confirm-section">
+          <!-- 始终显示确认按钮，除非正在生成或已生成 -->
           <button
             class="confirm-btn"
-            wx:if="{{item.status === 'recognized'}}"
+            wx:if="{{item.status !== 'confirmed' && item.status !== 'pdf_generated'}}"
             bindtap="confirmOneTask"
             data-index="{{index}}"
             data-taskid="{{item.taskId}}"

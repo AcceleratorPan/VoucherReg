@@ -5,6 +5,15 @@
   </view>
 
   <view class="content">
+    <!-- 文件名列表 -->
+    <view class="file-list-section" wx:if="{{fileNames.length > 0}}">
+      <text class="section-label">文件列表：</text>
+      <view class="file-list-box">
+        <text class="file-name" wx:for="{{fileNames}}" wx:key="index">{{item}}</text>
+      </view>
+    </view>
+
+    <!-- 下载链接 -->
     <view class="url-section" wx:if="{{downloadUrl}}">
       <text class="section-label">下载链接：</text>
       <view class="url-box">

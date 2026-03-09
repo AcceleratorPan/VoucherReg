@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 
 from app.api.error_handlers import register_exception_handlers
 from app.api.router import api_router
@@ -23,10 +22,6 @@ def create_app() -> FastAPI:
 
     register_exception_handlers(app)
     app.include_router(api_router, prefix=settings.api_prefix)
-
-    storage_path = settings.local_storage_path
-    storage_path.mkdir(parents=True, exist_ok=True)
-    app.mount("/files", StaticFiles(directory=storage_path), name="files")
 
     return app
 

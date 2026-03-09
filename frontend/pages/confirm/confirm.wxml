@@ -1,100 +1,166 @@
 <view class="container">
-  <!-- 顶部操作栏 -->
-  <view class="header">
-    <text class="title">确认凭证信息</text>
-    <view class="header-right" wx:if="{{!selectionMode}}">
-      <text class="task-count">共 {{taskList.length}} 个任务</text>
-      <view class="batch-btn" bindtap="enterSelectionMode">
-        批量下载
+  <view class="content-shell">
+    <view class="summary-card">
+      <view class="summary-top">
+        <view class="summary-copy">
+          <text class="title">识别结果</text>
+          <text class="subtitle" wx:if="{{!emptyState}}">
+            本批次共 {{taskList.length}} 个任务，需手动补全的任务已置顶显示。
+          </text>
+        </view>
+        <view class="summary-action" wx:if="{{!selectionMode && generatedCount > 0}}" bindtap="enterSelectionMode">
+          批量下载
+        </view>
+      </view>
+
+      <view class="summary-metrics" wx:if="{{!emptyState}}">
+        <view class="metric-card metric-priority">
+          <text class="metric-value">{{manualFillCount}}</text>
+          <text class="metric-label">待手动补全</text>
+        </view>
+        <view class="metric-card">
+          <text class="metric-value">{{processingCount}}</text>
+          <text class="metric-label">识别中</text>
+        </view>
+        <view class="metric-card">
+          <text class="metric-value">{{readyCount}}</text>
+          <text class="metric-label">待生成</text>
+        </view>
+        <view class="metric-card">
+          <text class="metric-value">{{generatedCount}}</text>
+          <text class="metric-label">已生成</text>
+        </view>
+      </view>
+
+      <view class="selection-banner" wx:if="{{selectionMode}}">
+        <text class="select-hint">已选择 {{selectedCount}} 个可下载任务</text>
+        <text class="select-all" bindtap="selectAll">全选可下载项</text>
+      </view>
+
+      <view class="priority-banner" wx:if="{{!selectionMode && manualFillCount > 0}}">
+        <view class="priority-copy">
+          <text class="priority-title">优先处理手动补全项</text>
+          <text class="priority-desc">带有“已置顶”标记的任务需要先补全空白字段。</text>
+        </view>
+        <text class="priority-count">{{manualFillCount}} 项</text>
       </view>
     </view>
-    <view class="selection-header" wx:if="{{selectionMode}}">
-      <text class="select-hint">已选择 {{selectedCount}} 个</text>
-      <text class="select-all" bindtap="selectAll">全选</text>
+
+    <view class="empty-state" wx:if="{{emptyState}}">
+      <text class="empty-title">当前没有待查看结果</text>
+      <text class="empty-desc">返回上传页继续合成后，新的识别批次会显示在这里。</text>
     </view>
+
+    <scroll-view class="task-list" scroll-y wx:else>
+      <view class="task-item {{item.needsManualFill ? 'task-item-priority' : ''}}" wx:for="{{taskList}}" wx:key="taskId">
+        <view
+          class="task-checkbox {{!item.isDownloadable ? 'disabled' : ''}}"
+          wx:if="{{selectionMode}}"
+          bindtap="toggleSelection"
+          data-index="{{index}}"
+        >
+          <view class="checkbox {{selectedTasks[index] ? 'checked' : ''}}">
+            <text wx:if="{{selectedTasks[index]}}">✓</text>
+          </view>
+        </view>
+
+        <view class="task-content">
+          <view class="task-header">
+            <view class="task-title-row">
+              <text class="task-number">任务 {{item.batchOrder}}</text>
+              <text class="pin-badge" wx:if="{{item.needsManualFill}}">需补全 · 已置顶</text>
+            </view>
+            <view class="status-chip {{item.statusClass}}">
+              <text>{{item.statusText}}</text>
+            </view>
+          </view>
+
+          <text class="confidence" wx:if="{{item.confidence > 0}}">识别置信度 {{item.confidencePercent}}%</text>
+
+          <view class="status-panel processing-panel" wx:if="{{item.isProcessing}}">
+            <text>后台识别中，结果会自动刷新到当前列表。</text>
+          </view>
+
+          <view class="status-panel failed-panel" wx:if="{{item.status === 'failed'}}">
+            <text>OCR识别失败，请回看OCR首页并重新上传该任务。</text>
+          </view>
+
+          <view class="status-panel done-panel" wx:if="{{item.status === 'pdf_generated'}}">
+            <text>PDF 已生成，可加入批量下载。</text>
+          </view>
+
+          <view class="manual-alert" wx:if="{{item.needsManualFill}}">
+            <text>{{item.manualFillText}}</text>
+          </view>
+
+          <view class="form-section" wx:if="{{item.status === 'recognized' || item.status === 'pdf_generated'}}">
+            <view class="form-item">
+              <text class="label">科目名称</text>
+              <input
+                class="input {{item.needsManualFill && !item.subject ? 'input-warning' : ''}}"
+                value="{{item.subject}}"
+                placeholder="请输入科目名称"
+                bindinput="onSubjectInput"
+                data-taskid="{{item.taskId}}"
+                disabled="{{!item.canEdit}}"
+              />
+            </view>
+
+            <view class="form-item">
+              <text class="label">月份</text>
+              <input
+                class="input {{item.needsManualFill && !item.month ? 'input-warning' : ''}}"
+                value="{{item.month}}"
+                placeholder="例如: 2022-07"
+                bindinput="onMonthInput"
+                data-taskid="{{item.taskId}}"
+                disabled="{{!item.canEdit}}"
+              />
+            </view>
+
+            <view class="form-item">
+              <text class="label">凭证号</text>
+              <input
+                class="input {{item.needsManualFill && !item.voucherNo ? 'input-warning' : ''}}"
+                value="{{item.voucherNo}}"
+                placeholder="例如: 记470"
+                bindinput="onVoucherNoInput"
+                data-taskid="{{item.taskId}}"
+                disabled="{{!item.canEdit}}"
+              />
+            </view>
+          </view>
+
+          <view class="preview-section" wx:if="{{item.fileNamePreview || item.fileName}}">
+            <text class="preview-label">文件名</text>
+            <text class="preview-text">{{item.fileName || item.fileNamePreview}}</text>
+          </view>
+
+          <view class="action-row">
+            <view class="view-image-btn" bindtap="viewFirstImage" data-taskid="{{item.taskId}}">
+              回看OCR首页
+            </view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
   </view>
 
-  <!-- 任务列表 -->
-  <scroll-view class="task-list {{selectionMode ? 'selection-mode' : ''}}" scroll-y>
-    <view class="task-item" wx:for="{{taskList}}" wx:key="taskId">
-      <!-- 选择模式下的复选框 -->
-      <view class="task-checkbox" wx:if="{{selectionMode}}" bindtap="toggleSelection" data-index="{{index}}">
-        <view class="checkbox {{selectedTasks[index] ? 'checked' : ''}}">
-          <text wx:if="{{selectedTasks[index]}}">✓</text>
-        </view>
-      </view>
-
-      <!-- 任务内容 -->
-      <view class="task-content">
-        <view class="task-header">
-          <text class="task-number">任务 {{index + 1}}</text>
-          <text class="confidence" wx:if="{{item.confidence > 0}}">置信度: {{item.confidencePercent}}%</text>
-        </view>
-
-        <!-- 表单项 -->
-        <view class="form-section">
-          <view class="form-item">
-            <text class="label">科目名称</text>
-            <input
-              class="input"
-              value="{{item.subject}}"
-              placeholder="请输入科目名称"
-              bindinput="onSubjectInput"
-              data-index="{{index}}"
-            />
-          </view>
-
-          <view class="form-item">
-            <text class="label">月份</text>
-            <input
-              class="input"
-              value="{{item.month}}"
-              placeholder="例如: 2022-07"
-              bindinput="onMonthInput"
-              data-index="{{index}}"
-            />
-          </view>
-
-          <view class="form-item">
-            <text class="label">凭证号</text>
-            <input
-              class="input"
-              value="{{item.voucherNo}}"
-              placeholder="例如: 记470"
-              bindinput="onVoucherNoInput"
-              data-index="{{index}}"
-            />
-          </view>
-        </view>
-
-        <!-- 文件名预览 -->
-        <view class="preview-section" wx:if="{{item.fileNamePreview}}">
-          <text class="preview-label">文件名预览:</text>
-          <text class="preview-text">{{item.fileNamePreview}}</text>
-        </view>
-
-        <!-- 回看按钮 -->
-        <view class="view-image-btn" bindtap="viewFirstImage" data-taskid="{{item.taskId}}">
-          回看首页
-        </view>
-      </view>
-    </view>
-  </scroll-view>
-
-  <!-- 选择模式下的固定底部按钮 -->
-  <view class="fixed-bottom" wx:if="{{selectionMode}}">
+  <view class="footer-bar" wx:if="{{selectionMode}}">
     <button class="button cancel-btn" bindtap="cancelSelectionMode" disabled="{{loading}}">
       取消
     </button>
     <button class="button primary-button" bindtap="downloadSelected" loading="{{loading}}">
-      下载
+      下载选中
     </button>
   </view>
 
-  <!-- 固定底部按钮（非选择模式） -->
-  <view class="fixed-bottom-buttons" wx:if="{{!selectionMode}}">
+  <view class="footer-stack" wx:if="{{!selectionMode}}">
+    <button class="button primary-button" bindtap="onBatchConfirm" loading="{{loading}}">
+      生成已识别PDF
+    </button>
     <button class="button secondary-button" bindtap="onCancel" disabled="{{loading}}">
-      返回继续处理
+      返回继续上传
     </button>
     <button class="button back-home-button" bindtap="goHome">
       返回首页

@@ -24,16 +24,11 @@ class Settings(BaseSettings):
     rapidocr_use_rec: bool = True
 
     max_upload_mb: int = 15
+    download_link_expire_minutes: int = 30
+    batch_download_max_tasks: int = 20
 
     auth_secret_key: str = "change-me-in-production"
     auth_issuer: str = "voucher-backend"
-    auth_token_expire_minutes: int = 1440
-
-    wechat_app_id: str | None = None
-    wechat_app_secret: str | None = None
-    wechat_login_timeout_seconds: int = 8
-    wechat_login_mock_enabled: bool = False
-    wechat_login_mock_prefix: str = "dev-"
 
     model_config = SettingsConfigDict(
         env_file=".env",

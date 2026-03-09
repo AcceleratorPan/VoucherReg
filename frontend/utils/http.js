@@ -1,6 +1,12 @@
 const { BASE_URL } = require("../config");
+const { ensureLocalUserId } = require("./user");
 
-function request({ url, method = "GET", data, header = {} }) {
+function withUserId(url, userId = ensureLocalUserId()) {
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}userId=${encodeURIComponent(userId)}`;
+}
+
+function sendRequest({ url, method = "GET", data, header = {} }) {
   return new Promise((resolve, reject) => {
     wx.request({
       url: `${BASE_URL}${url}`,
@@ -8,7 +14,10 @@ function request({ url, method = "GET", data, header = {} }) {
       data,
       header: { "Content-Type": "application/json", ...header },
       success: (res) => {
-        if (res.statusCode >= 200 && res.statusCode < 300) return resolve(res.data);
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(res.data);
+          return;
+        }
         reject(res.data || { code: "HTTP_ERROR", message: `HTTP ${res.statusCode}` });
       },
       fail: reject,
@@ -16,16 +25,28 @@ function request({ url, method = "GET", data, header = {} }) {
   });
 }
 
-function uploadPage({ taskId, filePath, pageIndex, userId, name = "file" }) {
+function request({ url, method = "GET", data, header = {}, withUser = true }) {
+  return sendRequest({
+    url: withUser ? withUserId(url) : url,
+    method,
+    data,
+    header,
+  });
+}
+
+function uploadPage({ taskId, filePath, pageIndex, name = "file" }) {
   return new Promise((resolve, reject) => {
     wx.uploadFile({
-      url: `${BASE_URL}/voucher-tasks/${taskId}/pages?userId=${userId}`,
+      url: `${BASE_URL}${withUserId(`/voucher-tasks/${taskId}/pages`)}`,
       filePath,
       name,
       formData: { pageIndex: String(pageIndex) },
       success: (res) => {
         const data = JSON.parse(res.data || "{}");
-        if (res.statusCode >= 200 && res.statusCode < 300) return resolve(data);
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(data);
+          return;
+        }
         reject(data || { code: "UPLOAD_ERROR", message: `HTTP ${res.statusCode}` });
       },
       fail: reject,
@@ -33,68 +54,68 @@ function uploadPage({ taskId, filePath, pageIndex, userId, name = "file" }) {
   });
 }
 
-function createTask(userId) {
-  return request({
+function createTask() {
+  return sendRequest({
     url: "/voucher-tasks",
     method: "POST",
-    data: { userId },
+    data: { userId: ensureLocalUserId() },
   });
 }
 
-function finishUpload(taskId, userId) {
+function finishUpload(taskId) {
   return request({
-    url: `/voucher-tasks/${taskId}/finish-upload?userId=${userId}`,
+    url: `/voucher-tasks/${taskId}/finish-upload`,
     method: "POST",
   });
 }
 
-function recognize(taskId, userId) {
+function recognize(taskId) {
   return request({
-    url: `/voucher-tasks/${taskId}/recognize?userId=${userId}`,
+    url: `/voucher-tasks/${taskId}/recognize`,
     method: "POST",
   });
 }
 
-function confirmGenerate(taskId, { subject, month, voucherNo }, userId) {
+function confirmGenerate(taskId, { subject, month, voucherNo }) {
   return request({
-    url: `/voucher-tasks/${taskId}/confirm-generate?userId=${userId}`,
+    url: `/voucher-tasks/${taskId}/confirm-generate`,
     method: "POST",
     data: { subject, month, voucherNo },
   });
 }
 
-function getTask(taskId, userId) {
+function getTask(taskId) {
   return request({
-    url: `/voucher-tasks/${taskId}?userId=${userId}`,
+    url: `/voucher-tasks/${taskId}`,
     method: "GET",
   });
 }
 
-function getTasks(userId) {
+function getTasks({ limit = 100, offset = 0 } = {}) {
   return request({
-    url: `/voucher-tasks?userId=${userId}`,
+    url: `/voucher-tasks?limit=${limit}&offset=${offset}`,
     method: "GET",
   });
 }
 
-function clearAllTasks(userId) {
+function clearAllTasks() {
   return request({
-    url: `/voucher-tasks?userId=${userId}`,
+    url: "/voucher-tasks",
     method: "DELETE",
   });
 }
 
-function batchDownload(taskIds, userId) {
+function batchDownload(taskIds) {
   return request({
-    url: `/voucher-tasks/batch-download?userId=${userId}`,
+    url: "/voucher-tasks/batch-download-link",
     method: "POST",
     data: { taskIds },
   });
 }
 
-function getFirstImage(taskId, userId) {
+function getFirstImage(taskId) {
   return request({
-    url: `/voucher-tasks/${taskId}/first-image?userId=${userId}`,
+    url: `/voucher-tasks/${taskId}/first-image`,
     method: "GET",
   });
 }
@@ -110,5 +131,5 @@ module.exports = {
   getTasks,
   clearAllTasks,
   batchDownload,
-  getFirstImage
+  getFirstImage,
 };

@@ -28,16 +28,7 @@ def sample_image_bytes() -> bytes:
 
 @pytest.fixture
 def token_service() -> TokenService:
-    return TokenService(secret_key="test-secret-key", issuer="voucher-backend", expires_in_seconds=3600)
-
-
-@pytest.fixture
-def auth_headers(token_service: TokenService):
-    def _build(user_id: str) -> dict[str, str]:
-        token = token_service.create_access_token(user_id)
-        return {"Authorization": f"Bearer {token}"}
-
-    return _build
+    return TokenService(secret_key="test-secret-key", issuer="voucher-backend")
 
 
 @pytest.fixture

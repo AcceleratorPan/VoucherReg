@@ -1,4 +1,5 @@
 const { getTasks, clearAllTasks } = require("../../utils/http");
+const { setSelectedDownloadTasks } = require("../../utils/result-session");
 
 Page({
   data: {
@@ -31,8 +32,7 @@ Page({
     }
 
     try {
-      const userId = wx.getStorageSync("userId");
-      const result = await getTasks(userId);
+      const result = await getTasks({ limit: 100, offset: 0 });
       // 只显示 pdf_generated 状态的任务（已完成的任务）
       const allTasks = result.items || result || [];
       const validTasks = allTasks.filter(task => task.status === 'pdf_generated');
@@ -133,7 +133,7 @@ Page({
       return;
     }
 
-    wx.setStorageSync("selectedTasksForDownload", downloadTasks);
+    setSelectedDownloadTasks(downloadTasks);
     wx.navigateTo({
       url: "/pages/download/download"
     });
@@ -150,8 +150,7 @@ Page({
           const currentCount = this.data.tasks.length;
 
           try {
-            const userId = wx.getStorageSync("userId");
-            await clearAllTasks(userId);
+            await clearAllTasks();
             wx.showToast({
               title: `成功清除 ${currentCount} 条记录`,
               icon: "success"

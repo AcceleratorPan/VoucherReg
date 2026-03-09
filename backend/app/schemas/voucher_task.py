@@ -20,6 +20,10 @@ class VoucherPageResponse(APIModel):
     updated_at: datetime
 
 
+class CreateVoucherTaskRequest(APIModel):
+    user_id: str | None = None
+
+
 class VoucherTaskResponse(APIModel):
     task_id: str
     user_id: str | None = None
@@ -56,6 +60,15 @@ class RecognizeResponse(APIModel):
     needs_user_review: bool
 
 
+class FirstVoucherImageResponse(APIModel):
+    task_id: str
+    page_id: str
+    page_index: int
+    image_url: str
+    thumb_url: str | None = None
+    is_first_page: bool
+
+
 class ConfirmGenerateRequest(APIModel):
     subject: str | None = None
     month: str | None = None
@@ -67,6 +80,26 @@ class ConfirmGenerateResponse(APIModel):
     status: str
     file_name: str
     pdf_url: str
+
+
+class DownloadLinkResponse(APIModel):
+    task_id: str
+    file_name: str
+    content_type: str
+    download_url: str
+    expires_at: datetime
+
+
+class BatchDownloadLinkRequest(APIModel):
+    task_ids: list[str] = Field(min_length=1)
+
+
+class BatchDownloadLinkResponse(APIModel):
+    task_ids: list[str]
+    file_name: str
+    content_type: str
+    download_url: str
+    expires_at: datetime
 
 
 class VoucherTaskListResponse(APIModel):

@@ -28,7 +28,8 @@ app/
     deps.py
     error_handlers.py
     routes/
-      auth.py
+      downloads.py
+      files.py
       health.py
       voucher_tasks.py
     router.py
@@ -89,14 +90,13 @@ API docs:
 - Health: `GET /health`
 
 ## Core Workflow
-1. `POST /auth/wechat/login` (exchange WeChat code for access token)
-2. `POST /voucher-tasks` (with `Authorization: Bearer <token>`)
-3. `POST /voucher-tasks/{taskId}/pages`
-4. `POST /voucher-tasks/{taskId}/finish-upload`
-5. `POST /voucher-tasks/{taskId}/recognize`
-6. `POST /voucher-tasks/{taskId}/confirm-generate`
-7. `GET /voucher-tasks`
-8. `GET /voucher-tasks/{taskId}`
+1. `POST /voucher-tasks` with body `{ "userId": "user_001" }`
+2. `POST /voucher-tasks/{taskId}/pages?userId=user_001`
+3. `POST /voucher-tasks/{taskId}/finish-upload?userId=user_001`
+4. `POST /voucher-tasks/{taskId}/recognize?userId=user_001`
+5. `POST /voucher-tasks/{taskId}/confirm-generate?userId=user_001`
+6. `GET /voucher-tasks?userId=user_001`
+7. `GET /voucher-tasks/{taskId}?userId=user_001`
 
 ## Status Machine
 `draft -> uploaded -> recognized -> confirmed -> pdf_generated`
@@ -108,7 +108,8 @@ API docs:
 - Internal Python code uses snake_case.
 - OCR uses local `RapidOCR` by default (no cloud key required).
 - Storage defaults to local filesystem under `./data/storage`.
-- All voucher APIs are token-protected and user identity is resolved from bearer token.
+- Voucher task APIs are scoped by explicit `userId`.
+- Generated PDFs are downloadable only through temporary `/downloads/{token}` links.
 - WeChat Mini integration guide: `WECHAT_MINI_INTEGRATION_README.md`.
 
 ## RapidOCR Setup (Chinese OCR)

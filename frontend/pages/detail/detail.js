@@ -1,4 +1,5 @@
 const { getTask } = require("../../utils/http");
+const { clearAllResultState } = require("../../utils/result-session");
 
 Page({
   data: {
@@ -31,13 +32,7 @@ Page({
     this.setData({ loading: true });
 
     try {
-      const userId = wx.getStorageSync("userId");
-      if (!userId) {
-        this.setData({ loading: false });
-        return;
-      }
-      
-      const task = await getTask(this.data.taskId, userId);
+      const task = await getTask(this.data.taskId);
       const confidencePercent = task.confidence ? (task.confidence * 100).toFixed(0) : "0";
       this.setData({
         task: task,
@@ -116,11 +111,7 @@ Page({
   },
 
   goHome() {
-    // 清理所有相关存储
-    wx.removeStorageSync("pendingTasks");
-    wx.removeStorageSync("recreateTask");
-    wx.removeStorageSync("shouldResetIndex");
-    wx.removeStorageSync("selectedTasksForDownload");
+    clearAllResultState();
 
     wx.reLaunch({
       url: "/pages/home/home"

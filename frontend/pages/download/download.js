@@ -1,15 +1,16 @@
+const {
+  clearAllResultState,
+  clearSelectedDownloadTasks,
+  getSelectedDownloadTasks,
+} = require("../../utils/result-session");
+
 Page({
   data: {
     taskList: [],
-    userId: ""
   },
 
   onLoad(options) {
-    const userId = wx.getStorageSync("userId");
-    this.setData({ userId });
-
-    // 从全局或存储中获取选中的任务列表
-    const selectedTasks = wx.getStorageSync("selectedTasksForDownload");
+    const selectedTasks = getSelectedDownloadTasks();
     if (selectedTasks) {
       this.setData({ taskList: selectedTasks });
     }
@@ -17,11 +18,7 @@ Page({
 
   // 返回首页
   goHome() {
-    // 清理所有相关存储
-    wx.removeStorageSync("pendingTasks");
-    wx.removeStorageSync("recreateTask");
-    wx.removeStorageSync("shouldResetIndex");
-    wx.removeStorageSync("selectedTasksForDownload");
+    clearAllResultState();
 
     wx.reLaunch({
       url: "/pages/home/home"
@@ -30,7 +27,7 @@ Page({
 
   // 返回上一步（回到 confirm 页面）
   goBack() {
-    wx.removeStorageSync("selectedTasksForDownload");
+    clearSelectedDownloadTasks();
     wx.navigateBack();
   },
 

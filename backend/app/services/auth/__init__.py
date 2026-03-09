@@ -1,4 +1,3 @@
-from app.services.auth.token import AuthenticatedUser, TokenService
-from app.services.auth.wechat import WeChatAuthService
+from app.services.auth.token import TokenService
 
-__all__ = ["AuthenticatedUser", "TokenService", "WeChatAuthService"]
+__all__ = ["TokenService"]

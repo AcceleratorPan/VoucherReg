@@ -1,0 +1,44 @@
+<view class="container">
+  <view class="header">
+    <text class="title">下载凭证</text>
+    <text class="subtitle">共 {{taskCount}} 个任务</text>
+  </view>
+
+  <view class="content">
+    <view class="url-section" wx:if="{{downloadUrl}}">
+      <text class="section-label">下载链接：</text>
+      <view class="url-box">
+        <text class="url-text">{{downloadUrl}}</text>
+      </view>
+    </view>
+
+    <view class="loading-section" wx:else>
+      <text>正在获取下载链接...</text>
+    </view>
+
+    <view class="button-group">
+      <button class="button primary-button" bindtap="copyLink" wx:if="{{downloadUrl}}">
+        {{copied ? '已复制' : '复制到剪切板'}}
+      </button>
+      <button class="button secondary-button" bindtap="refreshLink" wx:if="{{downloadUrl}}">
+        刷新链接
+      </button>
+    </view>
+
+    <view class="tips">
+      <text class="tips-title">使用说明：</text>
+      <text class="tips-text">1. 复制上方链接到浏览器打开</text>
+      <text class="tips-text">2. 链接有效期为24小时</text>
+      <text class="tips-text">3. 请尽快下载</text>
+    </view>
+  </view>
+
+  <view class="fixed-bottom">
+    <button class="button secondary-button" bindtap="goBack">
+      返回
+    </button>
+    <button class="button primary-button" bindtap="goHome">
+      返回首页
+    </button>
+  </view>
+</view>

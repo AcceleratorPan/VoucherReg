@@ -74,6 +74,29 @@
         <view class="view-image-btn" bindtap="viewFirstImage" data-taskid="{{item.taskId}}">
           回看凭证页
         </view>
+
+        <!-- 确认按钮 -->
+        <view class="confirm-section">
+          <button
+            class="confirm-btn"
+            wx:if="{{item.status === 'recognized'}}"
+            bindtap="confirmOneTask"
+            data-index="{{index}}"
+            data-taskid="{{item.taskId}}"
+          >
+            确认
+          </button>
+          <button
+            class="confirm-btn generating"
+            wx:elif="{{item.status === 'confirmed'}}"
+            disabled
+          >
+            生成中...
+          </button>
+          <text class="generated-tag" wx:elif="{{item.status === 'pdf_generated'}}">
+            ✓ 已生成
+          </text>
+        </view>
       </view>
     </view>
   </scroll-view>

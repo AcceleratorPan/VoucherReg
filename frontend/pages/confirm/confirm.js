@@ -11,7 +11,7 @@ Page({
     selectedCount: 0
   },
 
-  onLoad(options) {
+  async onLoad(options) {
     const userId = wx.getStorageSync("userId");
     this.setData({ userId });
 
@@ -31,6 +31,69 @@ Page({
       taskList = [...unknownTasks, ...otherTasks];
 
       this.setData({ taskList });
+
+      // 自动生成所有已识别任务的 PDF
+      await this.autoGeneratePDFs(taskList, userId);
+    }
+  },
+
+  async autoGeneratePDFs(taskList, userId) {
+    // 找出已识别但未生成 PDF 的任务
+    const tasksToGenerate = taskList.filter(t =>
+      t.status === "recognized" && t.subject && t.month && t.voucherNo
+    );
+
+    if (tasksToGenerate.length === 0) {
+      return;
+    }
+
+    wx.showLoading({ title: "正在生成PDF..." });
+
+    try {
+      for (const task of tasksToGenerate) {
+        await this.retryWithBackoff(
+          () => confirmGenerate(task.taskId, {
+            subject: task.subject,
+            month: task.month,
+            voucherNo: task.voucherNo
+          }, userId),
+          3
+        );
+      }
+
+      // 更新本地存储
+      const pendingTasks = wx.getStorageSync("pendingTasks") || [];
+      const updatedTasks = pendingTasks.map(t => {
+        if (tasksToGenerate.find(g => g.taskId === t.taskId)) {
+          return { ...t, status: "pdf_generated" };
+        }
+        return t;
+      });
+      wx.setStorageSync("pendingTasks", updatedTasks);
+
+      // 刷新列表
+      let newTaskList = updatedTasks.map(task => ({
+        ...task,
+        confidencePercent: task.confidence ? (task.confidence * 100).toFixed(0) : 0
+      }));
+      const unknownTasks = newTaskList.filter(t => t.subject === "unknown");
+      const otherTasks = newTaskList.filter(t => t.subject !== "unknown");
+      newTaskList = [...unknownTasks, ...otherTasks];
+
+      this.setData({ taskList: newTaskList });
+
+      wx.showToast({
+        title: `已生成 ${tasksToGenerate.length} 个PDF`,
+        icon: "success"
+      });
+    } catch (error) {
+      console.error("自动生成PDF失败:", error);
+      wx.showToast({
+        title: "部分PDF生成失败",
+        icon: "none"
+      });
+    } finally {
+      wx.hideLoading();
     }
   },
 
@@ -83,6 +146,66 @@ Page({
       console.error("获取第一张图片失败:", error);
       wx.showToast({
         title: "获取图片失败",
+        icon: "none"
+      });
+    }
+  },
+
+  // 确认单个任务
+  async confirmOneTask(e) {
+    const index = e.currentTarget.dataset.index;
+    const taskId = e.currentTarget.dataset.taskid;
+    const { taskList, userId } = this.data;
+    const task = taskList[index];
+
+    // 检查信息是否完整
+    if (!task.subject || !task.month || !task.voucherNo) {
+      wx.showToast({
+        title: "请填写完整信息",
+        icon: "none"
+      });
+      return;
+    }
+
+    // 更新状态为生成中
+    const newTaskList = [...taskList];
+    newTaskList[index] = { ...task, status: "confirmed" };
+    this.setData({ taskList: newTaskList });
+
+    try {
+      await this.retryWithBackoff(
+        () => confirmGenerate(taskId, {
+          subject: task.subject,
+          month: task.month,
+          voucherNo: task.voucherNo
+        }, userId),
+        3
+      );
+
+      // 更新状态为已生成
+      const updatedTaskList = [...this.data.taskList];
+      updatedTaskList[index] = { ...updatedTaskList[index], status: "pdf_generated" };
+      this.setData({ taskList: updatedTaskList });
+
+      // 更新本地存储
+      const pendingTasks = wx.getStorageSync("pendingTasks") || [];
+      const updatedTasks = pendingTasks.map(t =>
+        t.taskId === taskId ? { ...t, status: "pdf_generated" } : t
+      );
+      wx.setStorageSync("pendingTasks", updatedTasks);
+
+      wx.showToast({
+        title: "生成成功",
+        icon: "success"
+      });
+    } catch (error) {
+      // 生成失败，恢复状态
+      const restoredTaskList = [...this.data.taskList];
+      restoredTaskList[index] = { ...restoredTaskList[index], status: "recognized" };
+      this.setData({ taskList: restoredTaskList });
+
+      wx.showToast({
+        title: "生成失败",
         icon: "none"
       });
     }
@@ -192,7 +315,7 @@ Page({
 
         setTimeout(() => {
           wx.navigateTo({
-            url: "/pages/download/download"
+            url: "/pages/present/present"
           });
         }, 1500);
       } else {
@@ -213,84 +336,31 @@ Page({
 
   // 批量下载（已选择的任务直接下载）
   async downloadSelected() {
-    const { taskList, selectedTasks, userId } = this.data;
+    const { taskList, selectedTasks } = this.data;
 
-    const tasksToDownload = taskList.filter((task, index) => selectedTasks[index]);
+    // 只选择已生成 PDF 的任务
+    const tasksToDownload = taskList.filter((task, index) => selectedTasks[index] && task.status === "pdf_generated");
 
     if (tasksToDownload.length === 0) {
       wx.showToast({
-        title: "请选择要下载的任务",
+        title: "请选择已生成PDF的任务",
         icon: "none"
       });
       return;
     }
 
-    this.setData({ loading: true });
+    // 保存选中的任务用于下载页面
+    const downloadTasks = tasksToDownload.map(t => ({
+      taskId: t.taskId,
+      pdfName: t.fileNamePreview || "凭证.pdf",
+      pdfUrl: t.pdfUrl || ""
+    }));
+    wx.setStorageSync("selectedTasksForDownload", downloadTasks);
 
-    try {
-      const taskIds = tasksToDownload.map(t => t.taskId);
-      const result = await batchDownloadLink(taskIds);
-
-      this.setData({ loading: false });
-
-      if (result.downloadUrl) {
-        // 下载 zip 文件
-        wx.downloadFile({
-          url: result.downloadUrl,
-          success: (res) => {
-            if (res.statusCode === 200) {
-              wx.saveFile({
-                tempFilePath: res.tempFilePath,
-                success: (saveRes) => {
-                  wx.showToast({
-                    title: "保存成功",
-                    icon: "success"
-                  });
-                },
-                fail: () => {
-                  wx.showToast({
-                    title: "保存失败",
-                    icon: "none"
-                  });
-                }
-              });
-            }
-          },
-          fail: () => {
-            wx.showToast({
-              title: "下载失败",
-              icon: "none"
-            });
-          }
-        });
-      } else {
-        // 如果后端直接返回文件，则跳转预览
-        const successTasks = tasksToDownload.map(t => ({
-          taskId: t.taskId,
-          pdfName: t.fileNamePreview || "凭证.pdf",
-          pdfUrl: result.pdfUrls ? result.pdfUrls[t.taskId] : ""
-        })).filter(t => t.pdfUrl);
-
-        if (successTasks.length > 0) {
-          wx.setStorageSync("selectedTasksForDownload", successTasks);
-          wx.navigateTo({
-            url: "/pages/download/download"
-          });
-        } else {
-          wx.showToast({
-            title: "获取下载链接失败",
-            icon: "none"
-          });
-        }
-      }
-    } catch (error) {
-      console.error("批量下载失败:", error);
-      this.setData({ loading: false });
-      wx.showToast({
-        title: "下载失败",
-        icon: "none"
-      });
-    }
+    // 跳转到下载页面
+    wx.navigateTo({
+      url: "/pages/present/present"
+    });
   },
 
   retryWithBackoff(fn, maxRetries = 3, delay = 1000) {

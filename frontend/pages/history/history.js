@@ -135,7 +135,7 @@ Page({
 
     wx.setStorageSync("selectedTasksForDownload", downloadTasks);
     wx.navigateTo({
-      url: "/pages/download/download"
+      url: "/pages/present/present"
     });
   },
 

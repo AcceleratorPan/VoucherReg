@@ -92,9 +92,9 @@ function batchDownload(taskIds, userId) {
   });
 }
 
-function batchDownloadLink(taskIds) {
+function batchDownloadLink(taskIds, userId) {
   return request({
-    url: `/voucher-tasks/batch-download-link`,
+    url: `/voucher-tasks/batch-download-link?userId=${userId}`,
     method: "POST",
     data: { taskIds },
   });

@@ -187,6 +187,33 @@
   text-align: center;
 }
 
+.confirm-section {
+  margin-top: 20rpx;
+}
+
+.confirm-btn {
+  display: inline-block;
+  padding: 16rpx 40rpx;
+  font-size: 26rpx;
+  color: #fff;
+  background-color: #07c160;
+  border-radius: 8rpx;
+  text-align: center;
+}
+
+.confirm-btn.generating {
+  background-color: #ff9800;
+}
+
+.generated-tag {
+  display: inline-block;
+  padding: 16rpx 40rpx;
+  font-size: 24rpx;
+  color: #07c160;
+  background-color: #e8f5e9;
+  border-radius: 8rpx;
+}
+
 /* 按钮区域 */
 .button-area {
   padding: 20rpx 0;

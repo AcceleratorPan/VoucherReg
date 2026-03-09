@@ -120,6 +120,7 @@ async def create_batch_download_link(
     user_id: str | None = Depends(get_request_user_id),
     service: VoucherTaskService = Depends(get_voucher_task_service),
 ) -> BatchDownloadLinkResponse:
+    print(f"DEBUG: batch-download-link called with user_id={user_id}, task_ids={payload.task_ids}")
     result = await service.create_batch_download_link(user_id=user_id, task_ids=payload.task_ids)
     download_url = str(request.url_for("consume_download_link", download_token=result["download_token"]))
     return BatchDownloadLinkResponse.model_validate({**result, "download_url": download_url})

@@ -117,8 +117,6 @@ Rules:
   - `fileName`
   - `pdfUrl`
 
-`pdfUrl` is a temporary download URL, not a raw `/files/.../result/...` path.
-
 ## 5. WeChat Mini Request Helpers
 
 Use Promise wrappers for stable async flow.
@@ -247,18 +245,13 @@ Use backend task status as source of truth:
 
 ## 9. File URL Handling
 
-Backend returns page image URLs like:
+Backend returns relative file URLs like:
 
-- `/files/{userId}/tasks/{taskId}/pages/0.png`
-
-For generated PDFs, backend returns a temporary absolute download URL like:
-
-- `http://localhost:8000/downloads/{downloadToken}`
+- `/files/{userId}/tasks/{taskId}/result/{fileName}.pdf`
 
 Mini Program should build absolute URL:
 
-- Use `pdfUrl` directly when it already starts with `http`.
-- Otherwise build `${BASE_URL}${imageUrl}` for page images.
+- `${BASE_URL}${pdfUrl}`
 
 ## 10. Partner Checklist
 

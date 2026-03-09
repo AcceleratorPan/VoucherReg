@@ -1,5 +1,4 @@
 const { BASE_URL } = require("../../config");
-const { clearAllResultState } = require("../../utils/result-session");
 
 Page({
   data: {
@@ -84,7 +83,11 @@ Page({
   },
 
   goHome() {
-    clearAllResultState();
+    // 清理所有相关存储
+    wx.removeStorageSync("pendingTasks");
+    wx.removeStorageSync("recreateTask");
+    wx.removeStorageSync("shouldResetIndex");
+    wx.removeStorageSync("selectedTasksForDownload");
 
     // 返回应用首页（home页面）
     wx.reLaunch({
@@ -93,6 +96,11 @@ Page({
   },
 
   nextProcess() {
+    const app = getApp();
+    app.clearCurrentTaskId();
+    // 设置标记，告诉 index 页面需要重置状态
+    wx.setStorageSync("shouldResetIndex", true);
+    // 使用 reLaunch 关闭所有页面并跳转到 index，确保页面重新创建
     wx.reLaunch({
       url: "/pages/index/index"
     });

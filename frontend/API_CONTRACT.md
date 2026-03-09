@@ -67,20 +67,6 @@ Response `200`:
 }
 ```
 
-## 2A) Get First Uploaded Image
-### `GET /voucher-tasks/{taskId}/first-image?userId={userId}`
-Response `200`:
-```json
-{
-  "taskId": "vt_xxxxx",
-  "pageId": "vp_xxxxx",
-  "pageIndex": 0,
-  "imageUrl": "http://localhost:8000/files/user_001/tasks/vt_xxxxx/pages/0.png",
-  "thumbUrl": null,
-  "isFirstPage": true
-}
-```
-
 ## 3) Finish Upload
 ### `POST /voucher-tasks/{taskId}/finish-upload?userId={userId}`
 Response `200`:
@@ -123,7 +109,7 @@ Response `200`:
   "taskId": "vt_123",
   "status": "pdf_generated",
   "fileName": "海南百迈科医疗科技股份有限公司-2022-07-记470.pdf",
-  "pdfUrl": "http://localhost:8000/downloads/v1.xxxxx.yyyyy"
+  "pdfUrl": "/files/user_001/tasks/vt_123/result/海南百迈科医疗科技股份有限公司-2022-07-记470.pdf"
 }
 ```
 
@@ -150,7 +136,7 @@ Response `200`:
   "month": "2022-07",
   "voucherNo": "记470",
   "fileName": "海南百迈科医疗科技股份有限公司-2022-07-记470.pdf",
-  "pdfUrl": "http://localhost:8000/downloads/v1.xxxxx.yyyyy",
+  "pdfUrl": "/files/user_001/tasks/vt_123/result/海南百迈科医疗科技股份有限公司-2022-07-记470.pdf",
   "status": "pdf_generated",
   "pageCount": 3,
   "confidence": 0.93,

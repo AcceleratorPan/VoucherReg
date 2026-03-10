@@ -1,14 +1,24 @@
 from __future__ import annotations
 
 from io import BytesIO
+import logging
 from urllib.parse import urlparse
 from zipfile import ZipFile
 
 from PIL import Image
 
+from app.api.deps import get_ocr_service
+
 
 def _user_params(user_id: str) -> dict[str, str]:
     return {"userId": user_id}
+
+
+def _build_rgb_png_bytes(size: tuple[int, int], color: tuple[int, int, int]) -> bytes:
+    image = Image.new("RGB", size, color=color)
+    output = BytesIO()
+    image.save(output, format="PNG")
+    return output.getvalue()
 
 
 def _create_generated_task(client, sample_image_bytes: bytes, user_id: str, page_count: int = 2) -> dict:
@@ -104,6 +114,31 @@ def test_single_download_link_returns_pdf_attachment(client, sample_image_bytes:
     assert download_resp.content.startswith(b"%PDF")
 
 
+def test_generated_pdf_bytes_follow_uploaded_image_content(client) -> None:
+    user_id = "pdf_bytes_user"
+    first = _create_generated_task(
+        client,
+        _build_rgb_png_bytes(size=(600, 900), color=(255, 0, 0)),
+        user_id=user_id,
+        page_count=1,
+    )
+    second = _create_generated_task(
+        client,
+        _build_rgb_png_bytes(size=(600, 900), color=(0, 0, 255)),
+        user_id=user_id,
+        page_count=1,
+    )
+
+    first_resp = client.get(urlparse(first["confirm"]["pdfUrl"]).path)
+    second_resp = client.get(urlparse(second["confirm"]["pdfUrl"]).path)
+
+    assert first_resp.status_code == 200
+    assert second_resp.status_code == 200
+    assert first_resp.content.startswith(b"%PDF")
+    assert second_resp.content.startswith(b"%PDF")
+    assert first_resp.content != second_resp.content
+
+
 def test_first_image_endpoint_returns_accessible_image_url(client, sample_image_bytes: bytes) -> None:
     user_id = "preview_user"
     create_resp = client.post("/voucher-tasks", json={"userId": user_id})
@@ -130,6 +165,73 @@ def test_first_image_endpoint_returns_accessible_image_url(client, sample_image_
     public_image_resp = client.get(image_path)
     assert public_image_resp.status_code == 200
     assert public_image_resp.headers["content-type"] == "image/png"
+
+
+def test_recognize_rotates_first_page_until_full_parse_and_persists_result(client, caplog, capsys) -> None:
+    class OrientationAwareOCR:
+        def __init__(self) -> None:
+            self.sizes: list[tuple[int, int]] = []
+
+        async def recognize(self, image_bytes: bytes, image_url: str | None = None) -> str:  # noqa: ARG002
+            with Image.open(BytesIO(image_bytes)) as image:
+                self.sizes.append(image.size)
+                if image.width > image.height:
+                    return "核算单位：旋转测试公司\n日期：2024-03-15"
+            return "核算单位：旋转测试公司\n日期：2024-03-15\n编号：记 - 77"
+
+    ocr_service = OrientationAwareOCR()
+    client.app.dependency_overrides[get_ocr_service] = lambda: ocr_service
+    caplog.set_level(logging.INFO, logger="app.services.voucher_task_service")
+
+    try:
+        user_id = "rotate_user"
+        create_resp = client.post("/voucher-tasks", json={"userId": user_id})
+        assert create_resp.status_code == 201
+        task_id = create_resp.json()["taskId"]
+
+        image = Image.new("RGB", (1200, 800), color=(255, 255, 255))
+        upload_buffer = BytesIO()
+        image.save(upload_buffer, format="PNG")
+
+        upload_resp = client.post(
+            f"/voucher-tasks/{task_id}/pages",
+            params=_user_params(user_id),
+            files={"file": ("page0.png", upload_buffer.getvalue(), "image/png")},
+            data={"pageIndex": "0"},
+        )
+        assert upload_resp.status_code == 200
+
+        finish_resp = client.post(f"/voucher-tasks/{task_id}/finish-upload", params=_user_params(user_id))
+        assert finish_resp.status_code == 200
+
+        recognize_resp = client.post(f"/voucher-tasks/{task_id}/recognize", params=_user_params(user_id))
+        assert recognize_resp.status_code == 200
+        recognize_data = recognize_resp.json()
+
+        assert recognize_data["subject"] == "旋转测试公司"
+        assert recognize_data["month"] == "2024-03"
+        assert recognize_data["voucherNo"] == "记77"
+        assert recognize_data["needsUserReview"] is False
+        assert ocr_service.sizes == [(1200, 800), (800, 1200)]
+        captured = capsys.readouterr()
+        assert "[OCR DEBUG] angle=0 raw_text:" in captured.out
+        assert "核算单位：旋转测试公司" in captured.out
+        assert "OCR attempt angle=0 raw_text:" in caplog.text
+        assert "核算单位：旋转测试公司" in caplog.text
+
+        detail_resp = client.get(f"/voucher-tasks/{task_id}", params=_user_params(user_id))
+        assert detail_resp.status_code == 200
+        detail = detail_resp.json()
+        assert detail["pages"][0]["width"] == 800
+        assert detail["pages"][0]["height"] == 1200
+
+        image_path = urlparse(detail["pages"][0]["imageUrl"]).path
+        rotated_resp = client.get(image_path)
+        assert rotated_resp.status_code == 200
+        with Image.open(BytesIO(rotated_resp.content)) as rotated_image:
+            assert rotated_image.size == (800, 1200)
+    finally:
+        client.app.dependency_overrides.pop(get_ocr_service, None)
 
 
 def test_uploaded_page_is_persisted_as_scanned_png(client) -> None:

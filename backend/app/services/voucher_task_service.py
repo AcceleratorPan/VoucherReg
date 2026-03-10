@@ -3,9 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
+import logging
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
+from PIL import Image, UnidentifiedImageError
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -20,6 +22,7 @@ from app.services.storage.base import StorageService
 from app.utils.filename import build_voucher_filename
 
 DOWNLOAD_TOKEN_SCOPE = "voucher-download"
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -27,6 +30,16 @@ class DownloadArtifact:
     file_name: str
     content_type: str
     data: bytes
+
+
+@dataclass(frozen=True)
+class OCRAttempt:
+    angle: int
+    image_bytes: bytes
+    width: int
+    height: int
+    raw_text: str
+    parsed: ParsedVoucherResult
 
 
 class VoucherTaskService:
@@ -131,8 +144,18 @@ class VoucherTaskService:
 
         try:
             image_bytes = await self.storage_service.read_bytes(first_page.image_path)
-            raw_text = await self.ocr_service.recognize(image_bytes=image_bytes, image_url=first_page.image_url)
-            parsed: ParsedVoucherResult = self.parsing_service.parse(raw_text)
+            attempt = await self._recognize_best_orientation(
+                image_bytes=image_bytes,
+                image_url=first_page.image_url,
+            )
+            if attempt.angle != 0:
+                first_page.image_url = await self.storage_service.save_bytes(
+                    first_page.image_path,
+                    attempt.image_bytes,
+                    content_type="image/png",
+                )
+                first_page.width = attempt.width
+                first_page.height = attempt.height
         except AppException:
             task.status = VoucherTaskStatus.FAILED.value
             self.db.commit()
@@ -147,25 +170,26 @@ class VoucherTaskService:
                 detail={"error": str(exc)},
             ) from exc
 
-        task.subject = parsed.subject
-        task.voucher_month = parsed.month
-        task.voucher_no = parsed.voucher_no
-        task.file_name = parsed.file_name_preview
-        task.raw_ocr_text = raw_text
-        task.confidence = parsed.confidence
+        task.subject = attempt.parsed.subject
+        task.voucher_month = attempt.parsed.month
+        task.voucher_no = attempt.parsed.voucher_no
+        task.file_name = attempt.parsed.file_name_preview
+        task.raw_ocr_text = attempt.raw_text
+        task.confidence = attempt.parsed.confidence
         task.status = VoucherTaskStatus.RECOGNIZED.value
 
         self.db.commit()
         self.db.refresh(task)
+        self.db.refresh(first_page)
 
         return {
             "task_id": task.id,
-            "subject": parsed.subject,
-            "month": parsed.month,
-            "voucher_no": parsed.voucher_no,
-            "file_name_preview": parsed.file_name_preview,
-            "confidence": parsed.confidence,
-            "needs_user_review": parsed.needs_user_review,
+            "subject": attempt.parsed.subject,
+            "month": attempt.parsed.month,
+            "voucher_no": attempt.parsed.voucher_no,
+            "file_name_preview": attempt.parsed.file_name_preview,
+            "confidence": attempt.parsed.confidence,
+            "needs_user_review": attempt.parsed.needs_user_review,
         }
 
     async def confirm_generate(self, user_id: str, task_id: str, payload: ConfirmGenerateRequest) -> dict:
@@ -534,6 +558,128 @@ class VoucherTaskService:
                 used_names.add(key)
                 return name
             counter += 1
+
+    async def _recognize_best_orientation(self, image_bytes: bytes, image_url: str | None) -> OCRAttempt:
+        best_attempt = await self._run_ocr_attempt(
+            image_bytes=image_bytes,
+            image_url=image_url,
+            angle=0,
+        )
+        if self._is_fully_recognized(best_attempt.parsed):
+            return best_attempt
+
+        for angle in (90, 180, 270):
+            rotated_bytes, width, height = self._rotate_image(image_bytes=image_bytes, angle=angle)
+            rotated_attempt = await self._run_ocr_attempt(
+                image_bytes=rotated_bytes,
+                image_url=image_url,
+                angle=angle,
+                width=width,
+                height=height,
+            )
+            if self._is_better_attempt(rotated_attempt, best_attempt):
+                best_attempt = rotated_attempt
+            if self._is_fully_recognized(rotated_attempt.parsed):
+                return rotated_attempt
+
+        return best_attempt
+
+    async def _run_ocr_attempt(
+        self,
+        image_bytes: bytes,
+        image_url: str | None,
+        angle: int,
+        width: int | None = None,
+        height: int | None = None,
+    ) -> OCRAttempt:
+        raw_text = await self.ocr_service.recognize(image_bytes=image_bytes, image_url=image_url)
+        parsed = self.parsing_service.parse(raw_text)
+        print(f"[OCR DEBUG] angle={angle} raw_text:\n{raw_text}", flush=True)
+        print(
+            "[OCR DEBUG] parsed "
+            f"angle={angle} subject={parsed.subject!r} month={parsed.month!r} "
+            f"voucher_no={parsed.voucher_no!r} confidence={parsed.confidence:.2f}",
+            flush=True,
+        )
+        logger.info("OCR attempt angle=%s raw_text:\n%s", angle, raw_text)
+        logger.info(
+            "OCR parsed angle=%s subject=%r month=%r voucher_no=%r confidence=%.2f",
+            angle,
+            parsed.subject,
+            parsed.month,
+            parsed.voucher_no,
+            parsed.confidence,
+        )
+        if width is None or height is None:
+            width, height = self._get_image_size(image_bytes)
+        return OCRAttempt(
+            angle=angle,
+            image_bytes=image_bytes,
+            width=width,
+            height=height,
+            raw_text=raw_text,
+            parsed=parsed,
+        )
+
+    @staticmethod
+    def _is_fully_recognized(parsed: ParsedVoucherResult) -> bool:
+        return bool(parsed.subject and parsed.month and parsed.voucher_no)
+
+    @staticmethod
+    def _is_better_attempt(candidate: OCRAttempt, current: OCRAttempt) -> bool:
+        candidate_score = (
+            VoucherTaskService._recognized_field_count(candidate.parsed),
+            candidate.parsed.confidence,
+        )
+        current_score = (
+            VoucherTaskService._recognized_field_count(current.parsed),
+            current.parsed.confidence,
+        )
+        return candidate_score > current_score
+
+    @staticmethod
+    def _recognized_field_count(parsed: ParsedVoucherResult) -> int:
+        return sum(1 for value in (parsed.subject, parsed.month, parsed.voucher_no) if value)
+
+    @staticmethod
+    def _rotate_image(image_bytes: bytes, angle: int) -> tuple[bytes, int, int]:
+        rotation_map = {
+            90: Image.Transpose.ROTATE_90,
+            180: Image.Transpose.ROTATE_180,
+            270: Image.Transpose.ROTATE_270,
+        }
+        transpose = rotation_map.get(angle)
+        if transpose is None:
+            raise ValidationException(message="Unsupported rotation angle")
+
+        try:
+            with Image.open(BytesIO(image_bytes)) as image:
+                rotated = image.transpose(transpose)
+                output = BytesIO()
+                rotated.save(output, format="PNG")
+                width, height = rotated.size
+        except (UnidentifiedImageError, OSError) as exc:
+            raise AppException(
+                status_code=500,
+                code="IMAGE_ROTATION_FAILED",
+                message="Stored image could not be rotated for OCR retry",
+                detail={"angle": angle, "error": str(exc)},
+            ) from exc
+
+        return output.getvalue(), width, height
+
+    @staticmethod
+    def _get_image_size(image_bytes: bytes) -> tuple[int, int]:
+        try:
+            with Image.open(BytesIO(image_bytes)) as image:
+                return image.size
+        except (UnidentifiedImageError, OSError) as exc:
+            raise AppException(
+                status_code=500,
+                code="IMAGE_READ_FAILED",
+                message="Stored image could not be read for OCR recognition",
+                detail={"error": str(exc)},
+            ) from exc
 
     @staticmethod
     def _require_user_id(user_id: str | None) -> str:

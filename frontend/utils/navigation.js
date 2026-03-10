@@ -26,7 +26,7 @@ function goHomeWithConfirm(options) {
           wx.removeStorageSync("selectedTasksForDownload");
           typeof onComplete === 'function' && onComplete(true);
         } else {
-          // 清空任务
+          // 丢弃任务
           wx.removeStorageSync("pendingTasks");
           wx.removeStorageSync("selectedTasksForDownload");
           typeof onComplete === 'function' && onComplete(false);

@@ -46,6 +46,17 @@
   font-weight: bold;
 }
 
+.tip-actions {
+  display: flex;
+  gap: 20rpx;
+  align-items: center;
+}
+
+.discard-btn {
+  color: #ff4d4f !important;
+  font-weight: normal;
+}
+
 /* 步骤指示器 */
 .step-indicator {
   display: flex;

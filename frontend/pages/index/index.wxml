@@ -2,7 +2,10 @@
   <!-- 待处理任务提示 -->
   <view class="normal-tip" wx:if="{{taskCount > 0}}">
     <text>已经上传了 {{taskCount}} 个任务</text>
-    <text class="confirm-btn" bindtap="goToConfirm">去确认</text>
+    <view class="tip-actions">
+      <text class="discard-btn" bindtap="discardTasks">丢弃</text>
+      <text class="confirm-btn" bindtap="goToConfirm">去确认</text>
+    </view>
   </view>
 
   <!-- 步骤指示 -->

@@ -2,6 +2,7 @@ App({
   onLaunch() {
     const logs = wx.getStorageSync("logs") || []
     logs.unshift(Date.now())
+    if (logs.length > 100) logs.pop() // 保留最近100条
     wx.setStorageSync("logs", logs)
 
     let userId = wx.getStorageSync("userId");

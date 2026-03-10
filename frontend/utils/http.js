@@ -85,6 +85,13 @@ function getTasks(userId) {
   });
 }
 
+function deleteTask(taskId, userId) {
+  return request({
+    url: `/voucher-tasks/${taskId}?userId=${userId}`,
+    method: "DELETE",
+  });
+}
+
 function clearAllTasks(userId) {
   return request({
     url: `/voucher-tasks?userId=${userId}`,
@@ -117,6 +124,7 @@ module.exports = {
   manualGenerate,
   getTask,
   getTasks,
+  deleteTask,
   clearAllTasks,
   batchDownloadLink,
   getFirstImage

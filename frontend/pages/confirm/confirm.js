@@ -52,8 +52,10 @@ Page({
     wx.showLoading({ title: "正在生成PDF..." });
 
     try {
+      const generateResults = {};
+
       for (const task of tasksToGenerate) {
-        await this.retryWithBackoff(
+        const result = await this.retryWithBackoff(
           () => confirmGenerate(task.taskId, {
             subject: task.subject,
             month: task.month,
@@ -61,13 +63,19 @@ Page({
           }, userId),
           3
         );
+        // 保存返回的文件名预览
+        generateResults[task.taskId] = result.fileNamePreview || "";
       }
 
       // 更新本地存储
       const pendingTasks = wx.getStorageSync("pendingTasks") || [];
       const updatedTasks = pendingTasks.map(t => {
         if (tasksToGenerate.find(g => g.taskId === t.taskId)) {
-          return { ...t, status: "pdf_generated" };
+          return {
+            ...t,
+            status: "pdf_generated",
+            fileNamePreview: generateResults[t.taskId] || this.generateFileNamePreview(t.subject, t.month, t.voucherNo)
+          };
         }
         return t;
       });
@@ -102,12 +110,23 @@ Page({
     }
   },
 
+  // 计算文件名预览
+  generateFileNamePreview(subject, month, voucherNo) {
+    if (!subject || !month || !voucherNo) return "";
+    return `${subject}_${month}_${voucherNo}.pdf`;
+  },
+
   // 监听输入变化
   onSubjectInput(e) {
     const index = e.currentTarget.dataset.index;
     const value = e.detail.value;
     const taskList = this.data.taskList;
     taskList[index].subject = value;
+    taskList[index].fileNamePreview = this.generateFileNamePreview(
+      value,
+      taskList[index].month,
+      taskList[index].voucherNo
+    );
     // 如果已生成过PDF，用户修改信息后需要重新确认
     if (taskList[index].status === "pdf_generated") {
       taskList[index].status = taskList[index].originalStatus || "recognized";
@@ -120,6 +139,11 @@ Page({
     const value = e.detail.value;
     const taskList = this.data.taskList;
     taskList[index].month = value;
+    taskList[index].fileNamePreview = this.generateFileNamePreview(
+      taskList[index].subject,
+      value,
+      taskList[index].voucherNo
+    );
     // 如果已生成过PDF，用户修改信息后需要重新确认
     if (taskList[index].status === "pdf_generated") {
       taskList[index].status = taskList[index].originalStatus || "recognized";
@@ -132,6 +156,11 @@ Page({
     const value = e.detail.value;
     const taskList = this.data.taskList;
     taskList[index].voucherNo = value;
+    taskList[index].fileNamePreview = this.generateFileNamePreview(
+      taskList[index].subject,
+      taskList[index].month,
+      value
+    );
     // 如果已生成过PDF，用户修改信息后需要重新确认
     if (taskList[index].status === "pdf_generated") {
       taskList[index].status = taskList[index].originalStatus || "recognized";
@@ -191,7 +220,7 @@ Page({
 
     try {
       // 始终使用 manualGenerate 接口
-      await this.retryWithBackoff(
+      const result = await this.retryWithBackoff(
         () => manualGenerate(taskId, {
           subject: task.subject,
           month: task.month,
@@ -200,9 +229,13 @@ Page({
         3
       );
 
-      // 更新状态为已生成
+      // 更新状态为已生成，并保存返回的文件名预览
       const updatedTaskList = [...this.data.taskList];
-      updatedTaskList[index] = { ...updatedTaskList[index], status: "pdf_generated" };
+      updatedTaskList[index] = {
+        ...updatedTaskList[index],
+        status: "pdf_generated",
+        fileNamePreview: result.fileNamePreview || this.generateFileNamePreview(task.subject, task.month, task.voucherNo)
+      };
       this.setData({ taskList: updatedTaskList });
 
       // 更新本地存储

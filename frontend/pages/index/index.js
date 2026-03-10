@@ -1,4 +1,4 @@
-const { createTask, uploadPage, finishUpload, recognize } = require("../../utils/http");
+const { createTask, uploadPage, finishUpload, recognize, deleteTask } = require("../../utils/http");
 
 Page({
   data: {
@@ -287,6 +287,65 @@ Page({
       step: 1,
       loading: false,
       loadingText: "",
+    });
+  },
+
+  async discardTasks() {
+    const { pendingTasks } = this.data;
+    if (pendingTasks.length === 0) {
+      wx.showToast({
+        title: "暂无可丢弃的任务",
+        icon: "none",
+      });
+      return;
+    }
+
+    wx.showModal({
+      title: "确认丢弃",
+      content: `确定要丢弃 ${pendingTasks.length} 个已上传的任务吗？此操作不可恢复。`,
+      confirmText: "确认丢弃",
+      confirmColor: "#ff4d4f",
+      success: async (res) => {
+        if (res.confirm) {
+          wx.showLoading({ title: "正在丢弃..." });
+
+          try {
+            const userId = wx.getStorageSync("userId");
+
+            // 逐个删除任务
+            for (const task of pendingTasks) {
+              try {
+                await deleteTask(task.taskId, userId);
+              } catch (e) {
+                console.warn(`删除任务 ${task.taskId} 失败:`, e);
+              }
+            }
+
+            // 清除本地存储
+            wx.removeStorageSync("pendingTasks");
+
+            // 重置页面状态
+            this.setData({
+              pendingTasks: [],
+              taskCount: 0,
+              activeTaskIds: []
+            });
+
+            wx.showToast({
+              title: "已丢弃",
+              icon: "success",
+            });
+          } catch (error) {
+            console.error("丢弃任务失败:", error);
+            wx.showToast({
+              title: "丢弃失败",
+              icon: "none",
+            });
+          } finally {
+            wx.hideLoading();
+          }
+        }
+      },
     });
   },
 

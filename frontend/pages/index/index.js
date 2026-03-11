@@ -6,10 +6,10 @@ Page({
     images: [],
     loading: false,
     loadingText: "",
-    step: 1,
+    step: 1, // 标记当前在哪一步
     taskCount: 0,
     pendingTasks: [],
-    activeTaskIds: [], // 正在后台识别的任务ID
+    activeTaskIds: [], // 正在后台识别的任务ID序列
   },
 
   onShow() {
@@ -170,6 +170,11 @@ Page({
       const task = await createTask(userId);
       const taskId = task.taskId;
 
+      /* 
+        按照当前实现，用户点击“上传图片”后需要等待
+        更为激进的优化是把 uploadPage 也放进 runRecognitionInBackground 中。
+        问题是如果上传错误，当然需要用户重新上传，处理逻辑比较复杂。
+      */
       await uploadPage({
         taskId,
         filePath: this.data.firstImage,
@@ -177,6 +182,7 @@ Page({
         userId,
       });
 
+      // 这里可以改用 Promise.all 并行上传，但是会打乱附加页顺序。
       for (let i = 0; i < this.data.images.length; i += 1) {
         await uploadPage({
           taskId,
@@ -188,7 +194,7 @@ Page({
 
       await finishUpload(taskId, userId);
 
-      // 先将任务添加到待处理列表（只有 taskId）
+      // 先将任务添加到 pendingTasks 列表（只有 taskId，没有其他信息）
       const newTask = {
         taskId: taskId,
         status: "uploaded"
@@ -200,7 +206,7 @@ Page({
         taskCount: pendingTasks.length
       });
 
-      // 重置表单，允许用户继续上传
+      // 自动返回第一步，允许用户继续上传
       this.resetUploadForm();
 
       wx.showToast({
@@ -209,7 +215,7 @@ Page({
         duration: 1500,
       });
 
-      // 后台异步识别
+      // 后台异步识别，补充 taskId 外其他信息
       this.runRecognitionInBackground(taskId, userId);
 
     } catch (error) {
